@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: ZigCat
+      changes:
+        - include:
+            file: ../../user-provider/src/main/resources/db/changelog/db.changelog-user-provider.yaml

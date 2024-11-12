@@ -1,0 +1,32 @@
+server:
+  port: 8080
+kafka:
+  bootstrap-server: 172.18.173.155:9092
+spring:
+  security:
+    csrf:
+      enabled: false
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-provider
+          path: http://locahost:8081
+          predicates:
+            - Path=/auth/**
+          filter:
+            - AddRequestHeader=X-Request-Source, Gateway
+            - RewritePath=/auth/(?<segment>.*), /$\\{segment}
+        - id: user-provider
+          path: http://localhost:8082
+          predicates:
+            - Path=/user/**
+          filter:
+            - AddRequestHeader=X-Request-Source, Gateway
+            - RewritePath=/user/(?<segment>.*), /$\\{segment}
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.web: TRACE
+
