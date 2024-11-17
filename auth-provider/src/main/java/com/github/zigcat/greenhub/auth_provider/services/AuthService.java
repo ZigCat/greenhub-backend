@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -28,9 +29,9 @@ public class AuthService {
         this.jwtProvider = jwtProvider;
     }
 
-    public UserRegisterResponse processRegistration(UserRegisterRequest request){
-        return messageQueryService.performRegisterRequest(request);
-    }
+//    public UserRegisterResponse processRegistration(UserRegisterRequest request){
+//        return messageQueryService.performRegisterRequest(request);
+//    }
 
     @EventListener
     public void handleAuthorizeEvent(AuthorizeMessageQueryAdapterEvent event){
@@ -38,7 +39,7 @@ public class AuthService {
         CompletableFuture<AuthorizeAuthServiceReply> replyFuture =
                 event.getReplyFuture();
         try{
-            UserAuthResponse userResponse = processAuthorization(request);
+            UserAuthResponse userResponse = new UserAuthResponse(1L, "John", "Doe", "jdoe@example.com", "ADMIN");
             AuthorizeAuthServiceReply reply = new AuthorizeAuthServiceReply(userResponse);
             replyFuture.complete(reply);
         } catch(JwtAuthException e) {
@@ -46,11 +47,11 @@ public class AuthService {
         }
     }
 
-    private UserAuthResponse processAuthorization(JwtRequest request) throws JwtAuthException{
-        String token = request.getToken();
-        jwtProvider.validateAccessToken(token);
-        String username = jwtProvider.getAccessSubject(token);
-        return messageQueryService.performAuthorizeRequest(
-                new UserAuthRequest(username));
-    }
+//    private UserAuthResponse processAuthorization(JwtRequest request) throws JwtAuthException{
+//        String token = request.getToken();
+//        jwtProvider.validateAccessToken(token);
+//        String username = jwtProvider.getAccessSubject(token);
+//        return messageQueryService.performAuthorizeRequest(
+//                new UserAuthRequest(username));
+//    }
 }

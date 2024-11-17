@@ -2,6 +2,8 @@ package com.github.zigcat.greenhub.auth_provider.kafka.config;
 
 import com.github.zigcat.greenhub.auth_provider.dto.datatypes.DTORequestible;
 import com.github.zigcat.greenhub.auth_provider.dto.datatypes.DTOResponsible;
+import com.github.zigcat.greenhub.auth_provider.dto.requests.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.responses.UserAuthResponse;
 import com.github.zigcat.greenhub.auth_provider.kafka.dto.KafkaMessageTemplate;
 import com.github.zigcat.greenhub.auth_provider.kafka.jackson.JsonDeserializer;
 import com.github.zigcat.greenhub.auth_provider.kafka.jackson.JsonSerializer;
@@ -54,46 +56,29 @@ public class KafkaConfiguration {
     }
 
     @Bean
-    public ProducerFactory<String, KafkaMessageTemplate<DTORequestible>> producerFactory(){
+    public ProducerFactory<String, KafkaMessageTemplate<UserAuthResponse>> producerFactory(){
         System.out.println(BOOTSTRAP_SERVER);
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        return new DefaultKafkaProducerFactory<>(props);
+        return new DefaultKafkaProducerFactory<>(props,
+                new StringSerializer(),
+                new JsonSerializer<>());
     }
 
     @Bean
-    public ConsumerFactory<String, KafkaMessageTemplate<DTOResponsible>> consumerFactory(){
+    public ConsumerFactory<String, KafkaMessageTemplate<JwtRequest>> consumerFactory(){
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-auth");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        return new DefaultKafkaConsumerFactory<>(props);
+        return new DefaultKafkaConsumerFactory<>(props,
+                new StringDeserializer(),
+                new JsonDeserializer<>(JwtRequest.class));
     }
 
     @Bean
-    public KafkaTemplate<String, KafkaMessageTemplate<DTORequestible>> kafkaTemplate(
-            ProducerFactory<String, KafkaMessageTemplate<DTORequestible>> producerFactory
+    public KafkaTemplate<String, KafkaMessageTemplate<UserAuthResponse>> kafkaTemplate(
+            ProducerFactory<String, KafkaMessageTemplate<UserAuthResponse>> producerFactory
     ){
         return new KafkaTemplate<>(producerFactory);
-    }
-
-    @Bean
-    public KafkaMessageListenerContainer<String, KafkaMessageTemplate<DTOResponsible>> container(
-            ConsumerFactory<String, KafkaMessageTemplate<DTOResponsible>> consumerFactory
-    ){
-        ContainerProperties properties =
-                new ContainerProperties(Pattern.compile("^(auth-user-reply-topic-.*|reg-reply-topic-.*)$"));
-        return new KafkaMessageListenerContainer<>(consumerFactory, properties);
-    }
-
-    @Bean
-    public ReplyingKafkaTemplate<String, KafkaMessageTemplate<DTORequestible>, KafkaMessageTemplate<DTOResponsible>> replyingTemplate(
-            ProducerFactory<String, KafkaMessageTemplate<DTORequestible>> producerFactory,
-            KafkaMessageListenerContainer<String, KafkaMessageTemplate<DTOResponsible>> container
-    ){
-        return new ReplyingKafkaTemplate<>(producerFactory, container);
     }
 }

@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 @RestController
 @Slf4j
 public class AuthController {
@@ -22,9 +24,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<UserRegisterResponse>> register(@RequestBody UserRegisterRequest dto){
-        System.out.println("request accepted");
-        UserRegisterResponse response = service.processRegistration(dto);
-        return Mono.just(ResponseEntity.ok(response));
+    public Mono<ResponseEntity<UserRegisterResponse>> register(){
+        return Mono.just(ResponseEntity.ok(new UserRegisterResponse(1L, "John", "Doe", "jdoe@example.com", "ADMIN", LocalDateTime.now())));
     }
 }

@@ -1,7 +1,7 @@
 server:
   port: 8082
 kafka:
-  bootstrap-server: localhost:9092
+  bootstrap-server: 172.18.173.155:9092
 spring:
   application:
     name: user-provider

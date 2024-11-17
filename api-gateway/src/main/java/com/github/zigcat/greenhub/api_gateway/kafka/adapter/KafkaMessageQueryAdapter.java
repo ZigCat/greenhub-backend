@@ -1,10 +1,10 @@
 package com.github.zigcat.greenhub.api_gateway.kafka.adapter;
 
 import com.github.zigcat.greenhub.api_gateway.adapters.MessageQueryAdapter;
-import com.github.zigcat.greenhub.api_gateway.dto.datatypes.DTORequestible;
-import com.github.zigcat.greenhub.api_gateway.dto.datatypes.DTOResponsible;
 import com.github.zigcat.greenhub.api_gateway.exceptions.AuthException;
 import com.github.zigcat.greenhub.api_gateway.exceptions.ServerException;
+import com.github.zigcat.greenhub.api_gateway.gateway.dto.JwtRequest;
+import com.github.zigcat.greenhub.api_gateway.gateway.dto.UserResponse;
 import com.github.zigcat.greenhub.api_gateway.kafka.dto.KafkaMessageTemplate;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -21,27 +21,33 @@ import java.util.concurrent.ExecutionException;
 
 @Component
 public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
-    private final ReplyingKafkaTemplate<String, KafkaMessageTemplate<DTORequestible>, KafkaMessageTemplate<DTOResponsible>> replyingTemplate;
+    private final ReplyingKafkaTemplate<String, KafkaMessageTemplate<JwtRequest>, KafkaMessageTemplate<UserResponse>> replyingTemplate;
     private final AdminClient adminClient;
 
     @Autowired
-    public KafkaMessageQueryAdapter(ReplyingKafkaTemplate<String, KafkaMessageTemplate<DTORequestible>, KafkaMessageTemplate<DTOResponsible>> replyingTemplate,
-                                    AdminClient adminClient) {
+    public KafkaMessageQueryAdapter(
+            ReplyingKafkaTemplate<
+                    String,
+                    KafkaMessageTemplate<JwtRequest>,
+                    KafkaMessageTemplate<UserResponse>
+                    > replyingTemplate,
+            AdminClient adminClient
+    ) {
         this.replyingTemplate = replyingTemplate;
         this.adminClient = adminClient;
     }
 
     @Override
-    public DTOResponsible performAndAwait(String requestTopic, String replyTopic, DTORequestible data) {
+    public UserResponse performAndAwait(String requestTopic, String replyTopic, JwtRequest data) {
         String uniqueId = UUID.randomUUID().toString();
-        KafkaMessageTemplate<DTORequestible> request = new KafkaMessageTemplate<>(data);
+        KafkaMessageTemplate<JwtRequest> request = new KafkaMessageTemplate<>(data);
         replyTopic = replyTopic + uniqueId;
         createTopic(replyTopic);
-        ProducerRecord<String, KafkaMessageTemplate<DTORequestible>> record = new ProducerRecord<>(requestTopic, request);
+        ProducerRecord<String, KafkaMessageTemplate<JwtRequest>> record = new ProducerRecord<>(requestTopic, request);
         record.headers().add(KafkaHeaders.REPLY_TOPIC, replyTopic.getBytes());
-        RequestReplyFuture<String, KafkaMessageTemplate<DTORequestible>, KafkaMessageTemplate<DTOResponsible>> replyFuture =
+        RequestReplyFuture<String, KafkaMessageTemplate<JwtRequest>, KafkaMessageTemplate<UserResponse>> replyFuture =
                 replyingTemplate.sendAndReceive(record);
-        KafkaMessageTemplate<DTOResponsible> response;
+        KafkaMessageTemplate<UserResponse> response;
         try {
             response = replyFuture.get().value();
             if(response.getStatus() == 500){

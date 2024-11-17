@@ -31,75 +31,33 @@ import java.util.concurrent.ExecutionException;
 
 @Component
 public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
-    private final KafkaTemplate<String, KafkaMessageTemplate<DTORequestible>> kafkaTemplate;
-    private final ReplyingKafkaTemplate<String, KafkaMessageTemplate<DTORequestible>, KafkaMessageTemplate<DTOResponsible>> replyingTemplate;
-    private final AdminClient adminClient;
+    private final KafkaTemplate<String, KafkaMessageTemplate<UserAuthResponse>> kafkaTemplate;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     public KafkaMessageQueryAdapter(
-            KafkaTemplate<String, KafkaMessageTemplate<DTORequestible>> kafkaTemplate,
-            ReplyingKafkaTemplate<String, KafkaMessageTemplate<DTORequestible>, KafkaMessageTemplate<DTOResponsible>> replyingTemplate,
-            AdminClient adminClient,
+            KafkaTemplate<String, KafkaMessageTemplate<UserAuthResponse>> kafkaTemplate,
             ApplicationEventPublisher applicationEventPublisher) {
         this.kafkaTemplate = kafkaTemplate;
-        this.replyingTemplate = replyingTemplate;
-        this.adminClient = adminClient;
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @KafkaListener(topics = "auth-topic", groupId = "greenhub-auth")
-    public void listen(ConsumerRecord<String, KafkaMessageTemplate<DTOInstance>> record,
+    public void listen(ConsumerRecord<String, KafkaMessageTemplate<JwtRequest>> record,
                        @Header(KafkaHeaders.REPLY_TOPIC) String replyTopic) {
-        KafkaMessageTemplate<DTOInstance> requestMessage = record.value();
-        DTOResponsible request = (DTOResponsible) requestMessage.getPayload();
+        KafkaMessageTemplate<JwtRequest> requestMessage = record.value();
+        JwtRequest request = requestMessage.getPayload();
         CompletableFuture<AuthorizeAuthServiceReply> replyFuture = new CompletableFuture<>();
         AuthorizeMessageQueryAdapterEvent event =
-                new AuthorizeMessageQueryAdapterEvent(this, (JwtRequest) request, replyFuture);
+                new AuthorizeMessageQueryAdapterEvent(this, request, replyFuture);
         applicationEventPublisher.publishEvent(event);
         replyFuture.thenAccept(reply -> {
             UserAuthResponse userResponse = reply.getUserResponse();
-            KafkaMessageTemplate<DTORequestible> response = new KafkaMessageTemplate<>((DTORequestible) userResponse);
+            KafkaMessageTemplate<UserAuthResponse> response = new KafkaMessageTemplate<>(userResponse);
             kafkaTemplate.send(replyTopic, response);
         }).exceptionally(e -> {
-            KafkaMessageTemplate<DTORequestible> errorResponse = new KafkaMessageTemplate<>(500, e.getMessage());
+            KafkaMessageTemplate<UserAuthResponse> errorResponse = new KafkaMessageTemplate<>(500, e.getMessage());
             kafkaTemplate.send(replyTopic, errorResponse);
             return null;
         });
-    }
-
-    @Override
-    public DTOResponsible sendAndAwait(String requestTopic, String replyTopic, DTORequestible data) {
-        String uniqueId = UUID.randomUUID().toString();
-        KafkaMessageTemplate<DTORequestible> request = new KafkaMessageTemplate<>(data);
-        replyTopic = replyTopic + uniqueId;
-        createTopic(replyTopic);
-        ProducerRecord<String, KafkaMessageTemplate<DTORequestible>> record = new ProducerRecord<>(requestTopic, request);
-        record.headers().add(KafkaHeaders.REPLY_TOPIC, replyTopic.getBytes());
-        RequestReplyFuture<String, KafkaMessageTemplate<DTORequestible>, KafkaMessageTemplate<DTOResponsible>> replyFuture =
-                replyingTemplate.sendAndReceive(record);
-        KafkaMessageTemplate<DTOResponsible> response;
-        try {
-            response = replyFuture.get().value();
-            if(response.getStatus() == 500){
-                throw new ServerException(response.getMessage());
-            } else if(response.getStatus() == 401 || response.getStatus() == 403){
-                throw new AuthException(response.getMessage());
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            throw new ServerException(e.getMessage());
-        }
-        deleteTopic(replyTopic);
-        return response.getPayload();
-    }
-
-    @Override
-    public void createTopic(String topicName) {
-        NewTopic topic = new NewTopic(topicName, 1, (short) 1);
-        adminClient.createTopics(List.of(topic));
-    }
-
-    @Override
-    public void deleteTopic(String topicName) {
-        adminClient.deleteTopics(List.of(topicName));
     }
 }

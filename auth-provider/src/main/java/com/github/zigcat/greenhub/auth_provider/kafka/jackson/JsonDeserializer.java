@@ -10,17 +10,19 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 import java.io.IOException;
 
-public class JsonDeserializer implements Deserializer<KafkaMessageTemplate<DTOInstance>> {
+public class JsonDeserializer<T> implements Deserializer<KafkaMessageTemplate<T>> {
     private final ObjectMapper objectMapper;
+    private final Class<T> targetType;
 
-    public JsonDeserializer() {
+    public JsonDeserializer(Class<T> targetType) {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        this.targetType = targetType;
     }
 
     @Override
-    public KafkaMessageTemplate<DTOInstance> deserialize(String s, byte[] bytes) {
+    public KafkaMessageTemplate<T> deserialize(String s, byte[] bytes) {
         if(bytes == null) return null;
         try {
             return objectMapper.readValue(
@@ -29,7 +31,7 @@ public class JsonDeserializer implements Deserializer<KafkaMessageTemplate<DTOIn
                             .getTypeFactory()
                             .constructParametricType(
                                     KafkaMessageTemplate.class,
-                                    DTOInstance.class
+                                    targetType
                             ));
         } catch (IOException e) {
             throw new SerDesException(e.getMessage());

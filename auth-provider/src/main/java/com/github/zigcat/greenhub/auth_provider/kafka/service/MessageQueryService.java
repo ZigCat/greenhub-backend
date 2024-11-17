@@ -18,15 +18,15 @@ public class MessageQueryService {
         this.adapter = adapter;
     }
 
-    public UserAuthResponse performAuthorizeRequest(UserAuthRequest request){
-        String REQUEST_TOPIC = "auth-user-topic";
-        String REPLY_TOPIC = "auth-user-reply-topic";
-        return (UserAuthResponse) adapter.sendAndAwait(REQUEST_TOPIC, REPLY_TOPIC, request);
-    }
+//    public UserAuthResponse performAuthorizeRequest(UserAuthRequest request){
+//        String REQUEST_TOPIC = "auth-user-topic";
+//        String REPLY_TOPIC = "auth-user-reply-topic";
+//        return (UserAuthResponse) adapter.sendAndAwait(REQUEST_TOPIC, REPLY_TOPIC, request);
+//    }
 
-    public UserRegisterResponse performRegisterRequest(UserRegisterRequest request){
-        String REQUEST_TOPIC = "reg-topic";
-        String REPLY_TOPIC = "reg-reply-topic";
-        return (UserRegisterResponse) adapter.sendAndAwait(REQUEST_TOPIC, REPLY_TOPIC, request);
-    }
+//    public UserRegisterResponse performRegisterRequest(UserRegisterRequest request){
+//        String REQUEST_TOPIC = "reg-topic";
+//        String REPLY_TOPIC = "reg-reply-topic";
+//        return (UserRegisterResponse) adapter.sendAndAwait(REQUEST_TOPIC, REPLY_TOPIC, request);
+//    }
 }

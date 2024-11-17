@@ -7,7 +7,4 @@ import com.github.zigcat.greenhub.auth_provider.kafka.dto.KafkaMessageTemplate;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 public interface MessageQueryAdapter {
-    DTOResponsible sendAndAwait(String requestTopic, String replyTopic, DTORequestible data);
-    void createTopic(String topicName);
-    void deleteTopic(String topicName);
 }
