@@ -1,6 +1,6 @@
 package com.github.zigcat.greenhub.auth_provider.security.jwt;
 
-import com.github.zigcat.greenhub.auth_provider.dto.responses.UserAuthResponse;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.UserAuthResponse;
 import com.github.zigcat.greenhub.auth_provider.exceptions.JwtAuthException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -30,7 +30,9 @@ public class JwtProvider {
     }
 
     public String generateAccessToken(@NonNull UserAuthResponse user){
-        Instant accessExpirationInstant = LocalDateTime.now().plusMinutes(10).atZone(ZoneId.systemDefault()).toInstant();
+        Instant accessExpirationInstant = LocalDateTime.now().plusMinutes(10)
+                .atZone(ZoneId.systemDefault())
+                .toInstant();
         Date accessExpiration = Date.from(accessExpirationInstant);
         return Jwts.builder()
                 .setSubject(user.getEmail())
@@ -40,6 +42,14 @@ public class JwtProvider {
                 .claim("fname", user.getFname())
                 .claim("lname", user.getLname())
                 .compact();
+    }
+
+    private Claims getClaims(String token, SecretKey key){
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public String generateRefreshToken(@NonNull UserAuthResponse user){
@@ -62,14 +72,6 @@ public class JwtProvider {
 
     public String getAccessSubject(String token){
         return getSubject(token, jwtAccessSecret);
-    }
-
-    private Claims getClaims(String token, SecretKey key){
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 
     private String getSubject(String token, SecretKey key){

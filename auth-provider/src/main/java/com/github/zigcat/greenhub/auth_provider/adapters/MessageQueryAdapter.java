@@ -1,10 +1,11 @@
 package com.github.zigcat.greenhub.auth_provider.adapters;
 
-import com.github.zigcat.greenhub.auth_provider.dto.datatypes.DTORequestible;
-import com.github.zigcat.greenhub.auth_provider.dto.datatypes.DTOResponsible;
-import com.github.zigcat.greenhub.auth_provider.dto.requests.JwtRequest;
-import com.github.zigcat.greenhub.auth_provider.kafka.dto.KafkaMessageTemplate;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.RegisterRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.RegisterResponse;
+import reactor.core.publisher.Mono;
 
 public interface MessageQueryAdapter {
+    void processMessage();
+
+    Mono<RegisterResponse> registerAndAwait(RegisterRequest data);
 }

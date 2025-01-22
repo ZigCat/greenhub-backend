@@ -1,0 +1,12 @@
+package com.github.zigcat.greenhub.auth_provider.dto.mq.requests;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class JwtRequest {
+    private String token;
+}

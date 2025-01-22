@@ -1,76 +1,72 @@
 package com.github.zigcat.greenhub.api_gateway.kafka.adapter;
 
 import com.github.zigcat.greenhub.api_gateway.adapters.MessageQueryAdapter;
+import com.github.zigcat.greenhub.api_gateway.dto.requests.JwtRequest;
+import com.github.zigcat.greenhub.api_gateway.dto.responces.UserAuthResponse;
+import com.github.zigcat.greenhub.api_gateway.dto.message.MessageTemplate;
 import com.github.zigcat.greenhub.api_gateway.exceptions.AuthException;
-import com.github.zigcat.greenhub.api_gateway.exceptions.ServerException;
-import com.github.zigcat.greenhub.api_gateway.gateway.dto.JwtRequest;
-import com.github.zigcat.greenhub.api_gateway.gateway.dto.UserResponse;
-import com.github.zigcat.greenhub.api_gateway.kafka.dto.KafkaMessageTemplate;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.NewTopic;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
-import org.springframework.kafka.requestreply.RequestReplyFuture;
-import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+import reactor.kafka.receiver.KafkaReceiver;
+import reactor.kafka.sender.KafkaSender;
+import reactor.kafka.sender.SenderRecord;
 
-import java.util.List;
+import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 @Component
+@Slf4j
 public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
-    private final ReplyingKafkaTemplate<String, KafkaMessageTemplate<JwtRequest>, KafkaMessageTemplate<UserResponse>> replyingTemplate;
-    private final AdminClient adminClient;
+    private KafkaSender<String, MessageTemplate<JwtRequest>> kafkaJwtRequestSender;
+    private KafkaReceiver<String, MessageTemplate<UserAuthResponse>> kafkaUserResponseReceiver;
 
     @Autowired
     public KafkaMessageQueryAdapter(
-            ReplyingKafkaTemplate<
-                    String,
-                    KafkaMessageTemplate<JwtRequest>,
-                    KafkaMessageTemplate<UserResponse>
-                    > replyingTemplate,
-            AdminClient adminClient
-    ) {
-        this.replyingTemplate = replyingTemplate;
-        this.adminClient = adminClient;
+            KafkaSender<String, MessageTemplate<JwtRequest>> kafkaJwtRequestSender,
+            KafkaReceiver<String, MessageTemplate<UserAuthResponse>> kafkaUserResponseReceiver) {
+        this.kafkaJwtRequestSender = kafkaJwtRequestSender;
+        this.kafkaUserResponseReceiver = kafkaUserResponseReceiver;
     }
 
     @Override
-    public UserResponse performAndAwait(String requestTopic, String replyTopic, JwtRequest data) {
-        String uniqueId = UUID.randomUUID().toString();
-        KafkaMessageTemplate<JwtRequest> request = new KafkaMessageTemplate<>(data);
-        replyTopic = replyTopic + uniqueId;
-        createTopic(replyTopic);
-        ProducerRecord<String, KafkaMessageTemplate<JwtRequest>> record = new ProducerRecord<>(requestTopic, request);
-        record.headers().add(KafkaHeaders.REPLY_TOPIC, replyTopic.getBytes());
-        RequestReplyFuture<String, KafkaMessageTemplate<JwtRequest>, KafkaMessageTemplate<UserResponse>> replyFuture =
-                replyingTemplate.sendAndReceive(record);
-        KafkaMessageTemplate<UserResponse> response;
-        try {
-            response = replyFuture.get().value();
-            if(response.getStatus() == 500){
-                throw new ServerException(response.getMessage());
-            } else if(response.getStatus() == 401 || response.getStatus() == 403){
-                throw new AuthException(response.getMessage());
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            throw new ServerException(e.getMessage());
-        } finally {
-            deleteTopic(replyTopic);
-        }
-        return response.getPayload();
-    }
-
-    @Override
-    public void createTopic(String topicName) {
-        NewTopic topic = new NewTopic(topicName, 1, (short) 1);
-        adminClient.createTopics(List.of(topic));
-    }
-
-    @Override
-    public void deleteTopic(String topicName) {
-        adminClient.deleteTopics(List.of(topicName));
+    public Mono<UserAuthResponse> performAndAwait(JwtRequest data) {
+        log.info("Preparing Kafka Record...");
+        String correlationId = UUID.randomUUID().toString();
+        MessageTemplate<JwtRequest> requestData = new MessageTemplate<>(data);
+        ProducerRecord<String, MessageTemplate<JwtRequest>> request =
+                new ProducerRecord<>("auth-topic", correlationId, requestData);
+        log.info("Sending and awaiting...");
+        return kafkaJwtRequestSender.send(Mono.just(SenderRecord.create(request, correlationId)))
+                .doOnNext(result -> log.info("Message sent successfully with correlationId: {}", correlationId))
+                .then(kafkaUserResponseReceiver.receive()
+                        .doOnNext(record -> log.info("Received record with key: {}", record.key()))
+                        .filter(record -> {
+                            if(record.key().equals(correlationId)){
+                                log.info("Correlated response captured");
+                                if(record.value().getStatus() == 200){
+                                    log.info("Status 200, reading...");
+                                    return true;
+                                } else {
+                                    throw new AuthException(record.value().getMessage());
+                                }
+                            }
+                            return false;
+                        })
+                        .map(record -> record.value().getPayload())
+                        .timeout(Duration.ofSeconds(5))
+                        .next()
+                        .onErrorMap(AuthException.class, e -> {
+                            log.error("Auth error: {}", e.getMessage());
+                            return e;
+                        })
+                        .doOnError(e -> {
+                            if (!(e instanceof AuthException)) {
+                                log.error("Error receiving Kafka response", e);
+                            }
+                        })
+                );
     }
 }

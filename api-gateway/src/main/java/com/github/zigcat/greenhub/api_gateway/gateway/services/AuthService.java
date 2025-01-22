@@ -3,12 +3,15 @@ package com.github.zigcat.greenhub.api_gateway.gateway.services;
 import com.github.zigcat.greenhub.api_gateway.exceptions.AuthException;
 import com.github.zigcat.greenhub.api_gateway.exceptions.ServerException;
 import com.github.zigcat.greenhub.api_gateway.kafka.service.MessageQueryService;
-import com.github.zigcat.greenhub.api_gateway.gateway.dto.UserResponse;
-import com.github.zigcat.greenhub.api_gateway.gateway.dto.JwtRequest;
+import com.github.zigcat.greenhub.api_gateway.dto.responces.UserAuthResponse;
+import com.github.zigcat.greenhub.api_gateway.dto.requests.JwtRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
+@Slf4j
 public class AuthService {
     private final MessageQueryService messageQueryService;
 
@@ -17,12 +20,11 @@ public class AuthService {
         this.messageQueryService = messageQueryService;
     }
 
-    public UserResponse authorizeByToken(String token) throws AuthException, ServerException {
+    public Mono<UserAuthResponse> authorizeByToken(String token) throws AuthException, ServerException {
+        log.info("Preparing token "+token+"to share via Kafka");
         JwtRequest request = new JwtRequest(token);
-        UserResponse response = messageQueryService.performAuthorizeRequest(request);
-        if(response == null){
-            throw new AuthException();
-        }
-        return response;
+        return messageQueryService.performAuthorizeRequest(request)
+                .switchIfEmpty(Mono.error(new AuthException()))
+                .onErrorMap(e -> new ServerException("Server error: "+e));
     }
 }

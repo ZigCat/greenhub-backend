@@ -1,84 +1,90 @@
 package com.github.zigcat.greenhub.auth_provider.kafka.config;
 
-import com.github.zigcat.greenhub.auth_provider.dto.datatypes.DTORequestible;
-import com.github.zigcat.greenhub.auth_provider.dto.datatypes.DTOResponsible;
-import com.github.zigcat.greenhub.auth_provider.dto.requests.JwtRequest;
-import com.github.zigcat.greenhub.auth_provider.dto.responses.UserAuthResponse;
-import com.github.zigcat.greenhub.auth_provider.kafka.dto.KafkaMessageTemplate;
-import com.github.zigcat.greenhub.auth_provider.kafka.jackson.JsonDeserializer;
-import com.github.zigcat.greenhub.auth_provider.kafka.jackson.JsonSerializer;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.NewTopic;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.UserAuthResponse;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.template.MessageTemplate;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.RegisterRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.RegisterResponse;
+import com.github.zigcat.greenhub.auth_provider.kafka.jackson.MessageTemplateDeserializer;
+import com.github.zigcat.greenhub.auth_provider.kafka.jackson.MessageTemplateSerializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.core.*;
-import org.springframework.kafka.listener.ContainerProperties;
-import org.springframework.kafka.listener.KafkaMessageListenerContainer;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
+import reactor.kafka.receiver.KafkaReceiver;
+import reactor.kafka.receiver.ReceiverOptions;
+import reactor.kafka.sender.KafkaSender;
+import reactor.kafka.sender.SenderOptions;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 @Configuration
 public class KafkaConfiguration {
     @Value("${kafka.bootstrap-server}")
     private String BOOTSTRAP_SERVER;
+    private ObjectMapper objectMapper;
 
-    @Bean
-    public KafkaAdmin kafkaAdmin(){
-        Map<String, Object> config = new HashMap<>();
-        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
-        return new KafkaAdmin(config);
+    @Autowired
+    public KafkaConfiguration(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @Bean
-    public AdminClient adminClient(){
-        Map<String, Object> config = new HashMap<>();
-        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
-        return AdminClient.create(config);
-    }
-
-    @Bean
-    public NewTopic authUserTopic(){
-        return new NewTopic("auth-user-topic", 10, (short) 1);
-    }
-
-    @Bean
-    public NewTopic regTopic(){
-        return new NewTopic("reg-topic", 10, (short) 1);
-    }
-
-    @Bean
-    public ProducerFactory<String, KafkaMessageTemplate<UserAuthResponse>> producerFactory(){
-        System.out.println(BOOTSTRAP_SERVER);
+    public KafkaSender<String, MessageTemplate<UserAuthResponse>> kafkaUserResponseSender(){
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
-        return new DefaultKafkaProducerFactory<>(props,
-                new StringSerializer(),
-                new JsonSerializer<>());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, MessageTemplateSerializer.class);
+        props.put("custom.object.mapper", objectMapper);
+        return KafkaSender.create(SenderOptions.create(props));
     }
 
     @Bean
-    public ConsumerFactory<String, KafkaMessageTemplate<JwtRequest>> consumerFactory(){
+    public KafkaSender<String, MessageTemplate<RegisterRequest>> kafkaRegisterRequestSender(){
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, MessageTemplateSerializer.class);
+        props.put("custom.object.mapper", objectMapper);
+        return KafkaSender.create(SenderOptions.create(props));
+    }
+
+    @Bean
+    public KafkaReceiver<String, MessageTemplate<JwtRequest>> kafkaJwtRequestReceiver(){
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-auth");
-        return new DefaultKafkaConsumerFactory<>(props,
-                new StringDeserializer(),
-                new JsonDeserializer<>(JwtRequest.class));
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MessageTemplateDeserializer.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put("value.deserializer.type", JwtRequest.class.getName());
+        props.put("custom.object.mapper", objectMapper);
+        ReceiverOptions<String, MessageTemplate<JwtRequest>> receiverOptions =
+                ReceiverOptions.create(props);
+        receiverOptions = receiverOptions.subscription(Collections.singleton("auth-topic"));
+        return KafkaReceiver.create(receiverOptions);
     }
 
     @Bean
-    public KafkaTemplate<String, KafkaMessageTemplate<UserAuthResponse>> kafkaTemplate(
-            ProducerFactory<String, KafkaMessageTemplate<UserAuthResponse>> producerFactory
-    ){
-        return new KafkaTemplate<>(producerFactory);
+    public KafkaReceiver<String, MessageTemplate<RegisterResponse>> kafkaRegisterResponseReceiver(){
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-register-reply");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MessageTemplateDeserializer.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put("value.deserializer.type", RegisterResponse.class.getName());
+        props.put("custom.object.mapper", objectMapper);
+        ReceiverOptions<String, MessageTemplate<RegisterResponse>> receiverOptions =
+                ReceiverOptions.create(props);
+        receiverOptions = receiverOptions.subscription(Collections.singleton("user-reg-topic-reply"));
+        return KafkaReceiver.create(receiverOptions);
     }
 }

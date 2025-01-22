@@ -1,6 +1,6 @@
 package com.github.zigcat.greenhub.auth_provider.events.events;
 
-import com.github.zigcat.greenhub.auth_provider.dto.requests.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.JwtRequest;
 import com.github.zigcat.greenhub.auth_provider.events.replies.AuthorizeAuthServiceReply;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;

@@ -1,37 +1,33 @@
 package com.github.zigcat.greenhub.auth_provider.services;
 
-import com.github.zigcat.greenhub.auth_provider.dto.requests.JwtRequest;
-import com.github.zigcat.greenhub.auth_provider.dto.requests.UserAuthRequest;
-import com.github.zigcat.greenhub.auth_provider.dto.requests.UserRegisterRequest;
-import com.github.zigcat.greenhub.auth_provider.dto.responses.UserAuthResponse;
-import com.github.zigcat.greenhub.auth_provider.dto.responses.UserRegisterResponse;
+import com.github.zigcat.greenhub.auth_provider.adapters.MessageQueryAdapter;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.UserAuthResponse;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.RegisterRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.RegisterResponse;
 import com.github.zigcat.greenhub.auth_provider.events.events.AuthorizeMessageQueryAdapterEvent;
 import com.github.zigcat.greenhub.auth_provider.events.replies.AuthorizeAuthServiceReply;
 import com.github.zigcat.greenhub.auth_provider.exceptions.JwtAuthException;
-import com.github.zigcat.greenhub.auth_provider.kafka.service.MessageQueryService;
 import com.github.zigcat.greenhub.auth_provider.security.jwt.JwtProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 
 @Service
+@Slf4j
 public class AuthService {
-    private final MessageQueryService messageQueryService;
+    private final MessageQueryAdapter messageQueryAdapter;
     private final JwtProvider jwtProvider;
 
     @Autowired
-    public AuthService(MessageQueryService messageQueryService,
-                       JwtProvider jwtProvider) {
-        this.messageQueryService = messageQueryService;
+    public AuthService(MessageQueryAdapter messageQueryAdapter, JwtProvider jwtProvider) {
+        this.messageQueryAdapter = messageQueryAdapter;
         this.jwtProvider = jwtProvider;
     }
-
-//    public UserRegisterResponse processRegistration(UserRegisterRequest request){
-//        return messageQueryService.performRegisterRequest(request);
-//    }
 
     @EventListener
     public void handleAuthorizeEvent(AuthorizeMessageQueryAdapterEvent event){
@@ -45,6 +41,10 @@ public class AuthService {
         } catch(JwtAuthException e) {
             replyFuture.completeExceptionally(e);
         }
+    }
+
+    public Mono<RegisterResponse> register(RegisterRequest dto){
+        return messageQueryAdapter.registerAndAwait(dto);
     }
 
 //    private UserAuthResponse processAuthorization(JwtRequest request) throws JwtAuthException{

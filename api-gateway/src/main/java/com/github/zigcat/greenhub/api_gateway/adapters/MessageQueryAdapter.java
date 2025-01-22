@@ -1,10 +1,9 @@
 package com.github.zigcat.greenhub.api_gateway.adapters;
 
-import com.github.zigcat.greenhub.api_gateway.gateway.dto.JwtRequest;
-import com.github.zigcat.greenhub.api_gateway.gateway.dto.UserResponse;
+import com.github.zigcat.greenhub.api_gateway.dto.requests.JwtRequest;
+import com.github.zigcat.greenhub.api_gateway.dto.responces.UserAuthResponse;
+import reactor.core.publisher.Mono;
 
 public interface MessageQueryAdapter {
-    UserResponse performAndAwait(String requestTopic, String replyTopic, JwtRequest data);
-    void createTopic(String topicName);
-    void deleteTopic(String topicName);
+    Mono<UserAuthResponse> performAndAwait(JwtRequest data);
 }

@@ -1,7 +1,7 @@
 server:
   port: 8080
 kafka:
-  bootstrap-server: 172.18.173.155:9092
+  bootstrap-server: localhost:9092
 eureka:
   client:
     service-url:
@@ -32,7 +32,13 @@ spring:
             - AddRequestHeader=X-Request-Source, Gateway
             - StripPrefix=1
             - name: GatewayJwtFilter
-logging:
-  level:
-    org.springframework.web: TRACE
-    org.springframework.cloud.gateway: DEBUG
+#logging:
+#  level:
+#    org.springframework.web.reactive.function.client: DEBUG
+#    org.springframework.web.reactive: TRACE
+#    org.springframework.web: TRACE
+#    org.springframework.cloud.gateway: DEBUG
+#    org.apache.kafka: DEBUG
+#    org.apache.kafka.clients: DEBUG
+#    org.springframework.kafka: DEBUG
+#    org.apache.kafka.common.network: DEBUG

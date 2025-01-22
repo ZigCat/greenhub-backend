@@ -1,6 +1,6 @@
 package com.github.zigcat.greenhub.user_provider.controllers;
 
-import com.github.zigcat.greenhub.user_provider.dto.UserDTO;
+import com.github.zigcat.greenhub.user_provider.dto.rest.entities.UserDTO;
 import com.github.zigcat.greenhub.user_provider.entities.AppUser;
 import com.github.zigcat.greenhub.user_provider.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;

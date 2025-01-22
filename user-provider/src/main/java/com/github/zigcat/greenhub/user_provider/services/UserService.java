@@ -1,14 +1,16 @@
 package com.github.zigcat.greenhub.user_provider.services;
 
-import com.github.zigcat.greenhub.user_provider.dto.UserDTO;
+import com.github.zigcat.greenhub.user_provider.dto.rest.entities.UserDTO;
 import com.github.zigcat.greenhub.user_provider.entities.AppUser;
 import com.github.zigcat.greenhub.user_provider.repositories.UserRepository;
 import com.github.zigcat.greenhub.user_provider.utils.UserUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@Slf4j
 public class UserService {
     private final UserRepository repository;
 
@@ -29,6 +31,15 @@ public class UserService {
     }
 
     public Mono<AppUser> create(Mono<UserDTO> userDTO){
-        return userDTO.map(UserUtils::toUser).flatMap(repository::save);
+        return userDTO
+                .map(dto -> {
+                    log.info("Registering user...");
+                    return UserUtils.toUser(dto);
+                })
+                .flatMap(data -> {
+                    return repository.save(data)
+                            .doOnNext(user -> log.info("User successfully registered {}", user))
+                            .doOnError(e -> log.error("Error while saving user to DB ", e));
+                });
     }
 }

@@ -1,6 +1,6 @@
 package com.github.zigcat.greenhub.user_provider.events;
 
-import com.github.zigcat.greenhub.user_provider.dto.requests.UserRegisterRequest;
+import com.github.zigcat.greenhub.user_provider.dto.mq.requests.RegisterRequest;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
@@ -8,11 +8,11 @@ import java.util.concurrent.CompletableFuture;
 
 @Getter
 public class RegisterMessageQueryAdapterEvent extends ApplicationEvent {
-    private UserRegisterRequest request;
+    private RegisterRequest request;
     private CompletableFuture<RegisterAuthServiceReply> replyFuture;
 
     public RegisterMessageQueryAdapterEvent(Object source,
-                                            UserRegisterRequest request,
+                                            RegisterRequest request,
                                             CompletableFuture<RegisterAuthServiceReply> replyFuture) {
         super(source);
         this.request = request;

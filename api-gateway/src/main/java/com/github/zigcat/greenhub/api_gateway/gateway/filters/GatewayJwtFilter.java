@@ -1,12 +1,13 @@
 package com.github.zigcat.greenhub.api_gateway.gateway.filters;
 
 import com.github.zigcat.greenhub.api_gateway.exceptions.AuthException;
-import com.github.zigcat.greenhub.api_gateway.gateway.dto.UserResponse;
+import com.github.zigcat.greenhub.api_gateway.dto.responces.UserAuthResponse;
+import com.github.zigcat.greenhub.api_gateway.exceptions.ServerException;
 import com.github.zigcat.greenhub.api_gateway.gateway.services.AuthService;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,31 +16,32 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 public class GatewayJwtFilter implements GatewayFilterFactory<GatewayJwtFilter.Config> {
     private final AuthService authService;
-
     @Autowired
     public GatewayJwtFilter(AuthService authService) {
         this.authService = authService;
     }
-
     @Override
     public GatewayFilter apply(Config config) {
-        return ((exchange, chain) -> {
+        return (exchange, chain) -> {
             String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-            if(!validateAuthHeader(authHeader)){
+
+            if (!validateAuthHeader(authHeader)) {
                 return this.onError(exchange, HttpStatus.UNAUTHORIZED);
             }
             String token = extractToken(authHeader);
-            try {
-                UserResponse response = authService.authorizeByToken(token);
-                exchange.getRequest().mutate().header("X-Username", response.getEmail());
-                return chain.filter(exchange);
-            } catch (AuthException e){
-                return this.onError(exchange, HttpStatus.FORBIDDEN);
-            }
-        });
+            log.info("Token is valid "+token);
+            return authService.authorizeByToken(token)
+                    .flatMap(response -> {
+                        exchange.getRequest().mutate().header("X-Username", response.getEmail());
+                        return chain.filter(exchange);
+                    })
+                    .onErrorResume(AuthException.class, e -> this.onError(exchange, HttpStatus.FORBIDDEN))
+                    .onErrorResume(ServerException.class, e -> this.onError(exchange, HttpStatus.INTERNAL_SERVER_ERROR));
+        };
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, HttpStatus status){

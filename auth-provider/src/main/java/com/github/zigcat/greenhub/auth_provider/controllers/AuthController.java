@@ -1,17 +1,16 @@
 package com.github.zigcat.greenhub.auth_provider.controllers;
 
-import com.github.zigcat.greenhub.auth_provider.dto.requests.UserRegisterRequest;
-import com.github.zigcat.greenhub.auth_provider.dto.responses.UserRegisterResponse;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.RegisterRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.RegisterResponse;
 import com.github.zigcat.greenhub.auth_provider.services.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-
-import java.time.LocalDateTime;
 
 @RestController
 @Slf4j
@@ -24,7 +23,14 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<UserRegisterResponse>> register(){
-        return Mono.just(ResponseEntity.ok(new UserRegisterResponse(1L, "John", "Doe", "jdoe@example.com", "ADMIN", LocalDateTime.now())));
+    public Mono<ResponseEntity<RegisterResponse>> register(@RequestBody RegisterRequest dto){
+        return Mono.just(dto)
+                .flatMap(data ->
+                    service.register(data)
+                            .map(response -> new ResponseEntity<>(response, HttpStatus.CREATED))
+                );
     }
+
+//    @PostMapping("/login")
+//    public Mono<ResponseEntity<>>
 }
