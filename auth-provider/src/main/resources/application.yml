@@ -1,10 +1,10 @@
 spring:
+  kafka:
+    bootstrap-servers: 172.18.173.155:9092
   application:
     name: auth-provider
 server:
   port: 8081
-kafka:
-  bootstrap-server: localhost:9092
 jwt:
   secret:
     access: x5Xq9PAiHuPFFJ/pG+H45JNQ/yPvNM8jXH3XNhWMp7k=

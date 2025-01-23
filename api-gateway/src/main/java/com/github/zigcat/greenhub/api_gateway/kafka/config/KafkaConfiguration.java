@@ -24,7 +24,7 @@ import java.util.*;
 
 @Configuration
 public class KafkaConfiguration {
-    @Value("${kafka.bootstrap-server}")
+    @Value("${spring.kafka.bootstrap-servers}")
     private String BOOTSTRAP_SERVER;
     private ObjectMapper objectMapper;
 

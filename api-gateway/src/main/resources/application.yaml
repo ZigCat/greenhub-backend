@@ -1,7 +1,5 @@
 server:
   port: 8080
-kafka:
-  bootstrap-server: localhost:9092
 eureka:
   client:
     service-url:
@@ -9,6 +7,8 @@ eureka:
   instance:
     prefer-ip-address: true
 spring:
+  kafka:
+    bootstrap-servers: 172.18.173.155:9092
   security:
     csrf:
       enabled: false
