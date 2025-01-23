@@ -22,5 +22,7 @@ public class UserProviderApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		adapter.processRegisterMessage();
+		adapter.processAuthorizeMessage();
+		adapter.processLoginMessage();
 	}
 }

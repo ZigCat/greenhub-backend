@@ -4,7 +4,10 @@ import com.github.zigcat.greenhub.user_provider.dto.rest.entities.UserDTO;
 import com.github.zigcat.greenhub.user_provider.entities.AppUser;
 import com.github.zigcat.greenhub.user_provider.repositories.UserRepository;
 import com.github.zigcat.greenhub.user_provider.utils.UserUtils;
+import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -27,7 +30,8 @@ public class UserService {
     }
 
     public Mono<AppUser> retrieveByEmail(String email){
-        return repository.findByEmail(email);
+        return repository.findByEmail(email)
+                .defaultIfEmpty(new AppUser());
     }
 
     public Mono<AppUser> create(Mono<UserDTO> userDTO){
@@ -36,9 +40,11 @@ public class UserService {
                     log.info("Registering user...");
                     return UserUtils.toUser(dto);
                 })
-                .flatMap(data -> {
-                    return repository.save(data)
-                            .doOnNext(user -> log.info("User successfully registered {}", user))
+                .flatMap(user -> {
+                    user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10)));
+                    log.info("Registering user {}", user);
+                    return repository.save(user)
+                            .doOnNext(res -> log.info("User successfully registered {}", user))
                             .doOnError(e -> log.error("Error while saving user to DB ", e));
                 });
     }

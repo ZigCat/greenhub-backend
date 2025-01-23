@@ -5,9 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class JwtRequest {
-    private String token;
-    private TokenType tokenType;
+@NoArgsConstructor
+public class AuthorizeRequest {
+    private String username;
 }

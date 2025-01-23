@@ -2,9 +2,12 @@ package com.github.zigcat.greenhub.auth_provider.services;
 
 import com.github.zigcat.greenhub.auth_provider.adapters.MessageQueryAdapter;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.AuthorizeRequest;
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.LoginRequest;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.UserAuthResponse;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.RegisterRequest;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.RegisterResponse;
+import com.github.zigcat.greenhub.auth_provider.dto.rest.JwtResponse;
 import com.github.zigcat.greenhub.auth_provider.events.events.AuthorizeMessageQueryAdapterEvent;
 import com.github.zigcat.greenhub.auth_provider.events.replies.AuthorizeAuthServiceReply;
 import com.github.zigcat.greenhub.auth_provider.exceptions.JwtAuthException;
@@ -34,24 +37,27 @@ public class AuthService {
         JwtRequest request = event.getJwtRequest();
         CompletableFuture<AuthorizeAuthServiceReply> replyFuture =
                 event.getReplyFuture();
-        try{
-            UserAuthResponse userResponse = new UserAuthResponse(1L, "John", "Doe", "jdoe@example.com", "ADMIN");
-            AuthorizeAuthServiceReply reply = new AuthorizeAuthServiceReply(userResponse);
-            replyFuture.complete(reply);
-        } catch(JwtAuthException e) {
-            replyFuture.completeExceptionally(e);
-        }
+        AuthorizeAuthServiceReply reply = new AuthorizeAuthServiceReply();
+        processAuthorization(request)
+                .doOnNext(reply::setUserResponse)
+                .doOnSuccess(response -> replyFuture.complete(reply))
+                .doOnError(replyFuture::completeExceptionally)
+                .subscribe();
+    }
+
+    private Mono<UserAuthResponse> processAuthorization(JwtRequest request) throws JwtAuthException{
+        String token = request.getToken();
+        jwtProvider.validateAccessToken(token);
+        String username = jwtProvider.getAccessSubject(token);
+        return messageQueryAdapter.authorizeAndAwait(new AuthorizeRequest(username));
     }
 
     public Mono<RegisterResponse> register(RegisterRequest dto){
         return messageQueryAdapter.registerAndAwait(dto);
     }
 
-//    private UserAuthResponse processAuthorization(JwtRequest request) throws JwtAuthException{
-//        String token = request.getToken();
-//        jwtProvider.validateAccessToken(token);
-//        String username = jwtProvider.getAccessSubject(token);
-//        return messageQueryService.performAuthorizeRequest(
-//                new UserAuthRequest(username));
-//    }
+    public Mono<JwtResponse> login(String username, String password){
+        return messageQueryAdapter.loginAndAwait(new LoginRequest(username, password))
+                .map(res -> new JwtResponse(jwtProvider.generateAccessToken(res), jwtProvider.generateRefreshToken(res)));
+    }
 }

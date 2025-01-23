@@ -1,7 +1,9 @@
 package com.github.zigcat.greenhub.auth_provider.controllers;
 
+import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.JwtRequest;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.requests.RegisterRequest;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.RegisterResponse;
+import com.github.zigcat.greenhub.auth_provider.dto.rest.JwtResponse;
 import com.github.zigcat.greenhub.auth_provider.services.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
+
+import java.util.Base64;
 
 @RestController
 @Slf4j
@@ -31,6 +36,18 @@ public class AuthController {
                 );
     }
 
-//    @PostMapping("/login")
-//    public Mono<ResponseEntity<>>
+    @PostMapping("/login")
+    public Mono<ResponseEntity<JwtResponse>> login(@RequestHeader("Authorization") String authHeader){
+        if (authHeader != null && authHeader.startsWith("Basic ")) {
+            log.info("LOGIN PROCESS");
+            String base64Credentials = authHeader.substring(6);
+            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+            String[] parts = credentials.split(":", 2);
+            String username = parts[0];
+            String password = parts[1];
+            return service.login(username, password)
+                    .map(ResponseEntity::ok);
+        }
+        return Mono.just(ResponseEntity.badRequest().build());
+    }
 }

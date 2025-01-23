@@ -20,4 +20,5 @@ eureka:
 #    org.apache.kafka: DEBUG
 #    org.apache.kafka.clients: DEBUG
 #    org.apache.kafka.common.network: DEBUG
+#    org.springframework.kafka: DEBUG
 #    org.springframework.web: TRACE

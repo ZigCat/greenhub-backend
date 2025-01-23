@@ -33,12 +33,12 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
 
     @Override
     public Mono<UserAuthResponse> performAndAwait(JwtRequest data) {
-        log.info("Preparing Kafka Record...");
+        log.info("AUTHORIZING REQUEST");
         String correlationId = UUID.randomUUID().toString();
         MessageTemplate<JwtRequest> requestData = new MessageTemplate<>(data);
         ProducerRecord<String, MessageTemplate<JwtRequest>> request =
                 new ProducerRecord<>("auth-topic", correlationId, requestData);
-        log.info("Sending and awaiting...");
+        log.info("Sending and awaiting Kafka Record...");
         return kafkaJwtRequestSender.send(Mono.just(SenderRecord.create(request, correlationId)))
                 .doOnNext(result -> log.info("Message sent successfully with correlationId: {}", correlationId))
                 .then(kafkaUserResponseReceiver.receive()

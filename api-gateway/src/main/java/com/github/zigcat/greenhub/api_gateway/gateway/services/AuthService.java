@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.api_gateway.gateway.services;
 
+import com.github.zigcat.greenhub.api_gateway.dto.requests.TokenType;
 import com.github.zigcat.greenhub.api_gateway.exceptions.AuthException;
 import com.github.zigcat.greenhub.api_gateway.exceptions.ServerException;
 import com.github.zigcat.greenhub.api_gateway.kafka.service.MessageQueryService;
@@ -22,7 +23,7 @@ public class AuthService {
 
     public Mono<UserAuthResponse> authorizeByToken(String token) throws AuthException, ServerException {
         log.info("Preparing token "+token+"to share via Kafka");
-        JwtRequest request = new JwtRequest(token);
+        JwtRequest request = new JwtRequest(token, TokenType.ACCESS);
         return messageQueryService.performAuthorizeRequest(request)
                 .switchIfEmpty(Mono.error(new AuthException()))
                 .onErrorMap(e -> new ServerException("Server error: "+e));

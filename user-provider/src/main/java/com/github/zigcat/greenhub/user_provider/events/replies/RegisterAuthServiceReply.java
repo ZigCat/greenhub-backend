@@ -1,4 +1,4 @@
-package com.github.zigcat.greenhub.user_provider.events;
+package com.github.zigcat.greenhub.user_provider.events.replies;
 
 import com.github.zigcat.greenhub.user_provider.dto.mq.responses.RegisterResponse;
 import lombok.AllArgsConstructor;

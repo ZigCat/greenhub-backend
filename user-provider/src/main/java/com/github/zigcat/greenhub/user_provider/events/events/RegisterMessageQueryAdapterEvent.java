@@ -1,6 +1,7 @@
-package com.github.zigcat.greenhub.user_provider.events;
+package com.github.zigcat.greenhub.user_provider.events.events;
 
 import com.github.zigcat.greenhub.user_provider.dto.mq.requests.RegisterRequest;
+import com.github.zigcat.greenhub.user_provider.events.replies.RegisterAuthServiceReply;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

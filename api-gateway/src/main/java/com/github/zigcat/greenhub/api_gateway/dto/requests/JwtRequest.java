@@ -7,4 +7,5 @@ import lombok.*;
 @AllArgsConstructor
 public class JwtRequest {
     private String token;
+    private TokenType tokenType;
 }

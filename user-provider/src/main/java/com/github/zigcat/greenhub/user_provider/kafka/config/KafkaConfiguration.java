@@ -1,8 +1,11 @@
 package com.github.zigcat.greenhub.user_provider.kafka.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.zigcat.greenhub.user_provider.dto.mq.requests.AuthorizeRequest;
+import com.github.zigcat.greenhub.user_provider.dto.mq.requests.LoginRequest;
 import com.github.zigcat.greenhub.user_provider.dto.mq.requests.RegisterRequest;
 import com.github.zigcat.greenhub.user_provider.dto.mq.responses.RegisterResponse;
+import com.github.zigcat.greenhub.user_provider.dto.mq.responses.UserAuthResponse;
 import com.github.zigcat.greenhub.user_provider.dto.mq.template.MessageTemplate;
 import com.github.zigcat.greenhub.user_provider.kafka.jackson.MessageTemplateDeserializer;
 import com.github.zigcat.greenhub.user_provider.kafka.jackson.MessageTemplateSerializer;
@@ -45,10 +48,20 @@ public class KafkaConfiguration {
     }
 
     @Bean
+    public KafkaSender<String, MessageTemplate<UserAuthResponse>> kafkaUserResponseSender(){
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, MessageTemplateSerializer.class);
+        props.put("custom.object.mapper", objectMapper);
+        return KafkaSender.create(SenderOptions.create(props));
+    }
+
+    @Bean
     public KafkaReceiver<String, MessageTemplate<RegisterRequest>> kafkaRegisterRequestReceiver(){
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-register");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-user-reg");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MessageTemplateDeserializer.class);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
@@ -57,6 +70,38 @@ public class KafkaConfiguration {
         ReceiverOptions<String, MessageTemplate<RegisterRequest>> receiverOptions =
                 ReceiverOptions.create(props);
         receiverOptions = receiverOptions.subscription(Collections.singleton("user-reg-topic"));
+        return KafkaReceiver.create(receiverOptions);
+    }
+
+    @Bean
+    public KafkaReceiver<String, MessageTemplate<AuthorizeRequest>> kafkaAuthorizeRequestReceiver(){
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-user-auth");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MessageTemplateDeserializer.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put("value.deserializer.type", AuthorizeRequest.class.getName());
+        props.put("custom.object.mapper", objectMapper);
+        ReceiverOptions<String, MessageTemplate<AuthorizeRequest>> receiverOptions =
+                ReceiverOptions.create(props);
+        receiverOptions = receiverOptions.subscription(Collections.singleton("user-auth-topic"));
+        return KafkaReceiver.create(receiverOptions);
+    }
+
+    @Bean
+    public KafkaReceiver<String, MessageTemplate<LoginRequest>> kafkaLoginRequestReceiver(){
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-user-login");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MessageTemplateDeserializer.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put("value.deserializer.type", LoginRequest.class.getName());
+        props.put("custom.object.mapper", objectMapper);
+        ReceiverOptions<String, MessageTemplate<LoginRequest>> receiverOptions =
+                ReceiverOptions.create(props);
+        receiverOptions = receiverOptions.subscription(Collections.singleton("user-login-topic"));
         return KafkaReceiver.create(receiverOptions);
     }
 }
