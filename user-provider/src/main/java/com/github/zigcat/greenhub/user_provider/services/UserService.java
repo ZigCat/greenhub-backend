@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.user_provider.services;
 
+import com.github.zigcat.greenhub.user_provider.dto.mq.requests.RegisterRequest;
 import com.github.zigcat.greenhub.user_provider.dto.mq.responses.UserAuthResponse;
 import com.github.zigcat.greenhub.user_provider.dto.rest.entities.UserDTO;
 import com.github.zigcat.greenhub.user_provider.entities.AppUser;
@@ -19,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,5 +76,19 @@ public class UserService {
                             })
                             .doOnError(e -> log.error("Error while saving user to DB ", e));
                 });
+    }
+
+    public Mono<AppUser> update(RegisterRequest updated, AppUser user){
+        user.setFname(Optional.ofNullable(updated.getFname()).orElse(user.getFname()));
+        user.setLname(Optional.ofNullable(updated.getLname()).orElse(user.getLname()));
+        user.setEmail(Optional.ofNullable(updated.getEmail()).orElse(user.getEmail()));
+        if(updated.getPassword() != null){
+            user.setPassword(BCrypt.hashpw(updated.getPassword(), BCrypt.gensalt(10)));
+        }
+        return userRepository.save(user);
+    }
+
+    public Mono<Void> delete(Long id){
+        return userRepository.deleteById(id);
     }
 }

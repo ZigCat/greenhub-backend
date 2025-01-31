@@ -1,11 +1,9 @@
 package com.github.zigcat.greenhub.api_gateway.exceptions;
 
-public class AuthException extends RuntimeException {
-    public AuthException() {
-        super("401: Unauthorized access");
-    }
+import com.github.zigcat.greenhub.api_gateway.exceptions.base.GreenhubException;
 
+public class AuthException extends GreenhubException {
     public AuthException(String message) {
-        super("401: " + message);
+        super(message, 401);
     }
 }

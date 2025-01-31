@@ -1,7 +1,9 @@
 package com.github.zigcat.greenhub.auth_provider.exceptions;
 
-public class JwtAuthException extends RuntimeException{
+import com.github.zigcat.greenhub.auth_provider.exceptions.base.GreenhubException;
+
+public class JwtAuthException extends GreenhubException {
     public JwtAuthException(String message) {
-        super(message);
+        super(message, 400);
     }
 }

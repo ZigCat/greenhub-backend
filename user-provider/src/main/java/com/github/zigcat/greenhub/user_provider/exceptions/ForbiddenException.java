@@ -3,8 +3,9 @@ package com.github.zigcat.greenhub.user_provider.exceptions;
 import com.github.zigcat.greenhub.user_provider.exceptions.base.GreenhubException;
 import lombok.Getter;
 
-public class NotFoundException extends GreenhubException {
-    public NotFoundException(String message) {
-        super(message, 404);
+@Getter
+public class ForbiddenException extends GreenhubException {
+    public ForbiddenException(String message) {
+        super(message, 403);
     }
 }

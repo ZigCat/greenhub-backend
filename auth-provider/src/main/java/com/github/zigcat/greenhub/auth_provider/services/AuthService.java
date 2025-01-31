@@ -47,9 +47,9 @@ public class AuthService {
 
     private Mono<UserAuthResponse> processAuthorization(JwtRequest request) throws JwtAuthException{
         String token = request.getToken();
-        jwtProvider.validateAccessToken(token);
-        String username = jwtProvider.getAccessSubject(token);
-        return messageQueryAdapter.authorizeAndAwait(new AuthorizeRequest(username));
+        return Mono.fromRunnable(() -> jwtProvider.validateAccessToken(token))
+                .then(Mono.fromCallable(() -> jwtProvider.getAccessSubject(token)))
+                .flatMap(username -> messageQueryAdapter.authorizeAndAwait(new AuthorizeRequest(username)));
     }
 
     public Mono<RegisterResponse> register(RegisterRequest dto){

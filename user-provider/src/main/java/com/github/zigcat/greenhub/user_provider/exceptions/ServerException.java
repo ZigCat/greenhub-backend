@@ -1,7 +1,9 @@
 package com.github.zigcat.greenhub.user_provider.exceptions;
 
-public class ServerException extends RuntimeException {
+import com.github.zigcat.greenhub.user_provider.exceptions.base.GreenhubException;
+
+public class ServerException extends GreenhubException {
     public ServerException(String message) {
-        super(message);
+        super(message, 500);
     }
 }

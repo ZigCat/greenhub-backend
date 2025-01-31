@@ -1,7 +1,9 @@
 package com.github.zigcat.greenhub.user_provider.exceptions;
 
-public class AuthException extends RuntimeException {
+import com.github.zigcat.greenhub.user_provider.exceptions.base.GreenhubException;
+
+public class AuthException extends GreenhubException {
     public AuthException(String message) {
-        super(message);
+        super(message, 401);
     }
 }

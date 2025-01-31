@@ -1,11 +1,9 @@
 package com.github.zigcat.greenhub.api_gateway.exceptions;
 
-public class ServerException extends RuntimeException {
-    public ServerException() {
-        super("500: Internal server error");
-    }
+import com.github.zigcat.greenhub.api_gateway.exceptions.base.GreenhubException;
 
+public class ServerException extends GreenhubException {
     public ServerException(String message) {
-        super("500: " + message);
+        super(message, 500);
     }
 }

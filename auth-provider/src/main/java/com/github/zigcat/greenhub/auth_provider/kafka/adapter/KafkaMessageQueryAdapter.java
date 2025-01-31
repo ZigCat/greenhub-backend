@@ -10,7 +10,9 @@ import com.github.zigcat.greenhub.auth_provider.dto.mq.responses.RegisterRespons
 import com.github.zigcat.greenhub.auth_provider.events.replies.AuthorizeAuthServiceReply;
 import com.github.zigcat.greenhub.auth_provider.events.events.AuthorizeMessageQueryAdapterEvent;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.template.MessageTemplate;
+import com.github.zigcat.greenhub.auth_provider.exceptions.JwtAuthException;
 import com.github.zigcat.greenhub.auth_provider.exceptions.ServerException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -178,6 +180,16 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
             UserAuthResponse response = reply.getUserResponse();
             MessageTemplate<UserAuthResponse> responseMessage = new MessageTemplate<>(response);
             sendResponse(responseMessage, correlationId);
+        }).exceptionally(e -> {
+            int status;
+            if(e instanceof JwtAuthException){
+                status = 401;
+            } else {
+                status = 500;
+            }
+            MessageTemplate<UserAuthResponse> responseData = new MessageTemplate<>(status, e.getMessage());
+            sendResponse(responseData, correlationId);
+            return null;
         });
     }
 

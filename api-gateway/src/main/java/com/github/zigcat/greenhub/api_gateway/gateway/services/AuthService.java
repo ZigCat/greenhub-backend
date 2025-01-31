@@ -25,7 +25,7 @@ public class AuthService {
         log.info("Preparing token "+token+"to share via Kafka");
         JwtRequest request = new JwtRequest(token, TokenType.ACCESS);
         return adapter.performAndAwait(request)
-                .switchIfEmpty(Mono.error(new AuthException()))
-                .onErrorMap(e -> new ServerException("Server error: "+e));
+                .switchIfEmpty(Mono.error(new AuthException("Wrong token")))
+                .onErrorMap(e -> new ServerException(e.getMessage()));
     }
 }

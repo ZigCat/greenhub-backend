@@ -60,7 +60,7 @@ public class JwtProvider {
                 .compact();
     }
 
-    public boolean validateAccessToken(String token){
+    public boolean validateAccessToken(String token) throws JwtAuthException{
         return validateToken(token, jwtAccessSecret);
     }
 
@@ -84,17 +84,17 @@ public class JwtProvider {
                     .parseClaimsJws(token);
             return true;
         } catch (MalformedJwtException e) {
-            throw new JwtAuthException("Invalid JWT token: " + e.getMessage());
+            throw new JwtAuthException("Invalid JWT token");
         } catch (ExpiredJwtException e) {
-            throw new JwtAuthException("JWT token is expired: " + e.getMessage());
+            throw new JwtAuthException("JWT token is expired");
         } catch (UnsupportedJwtException e) {
-            throw new JwtAuthException("JWT token is unsupported: " + e.getMessage());
+            throw new JwtAuthException("JWT token is unsupported");
         } catch (IllegalArgumentException e) {
-            throw new JwtAuthException("JWT claims string is empty: " + e.getMessage());
+            throw new JwtAuthException("JWT claims string is empty");
         } catch (SecurityException e) {
-            throw new JwtAuthException("Invalid JWT signature: " + e.getMessage());
+            throw new JwtAuthException("Invalid JWT signature");
         } catch (Exception e) {
-            throw new JwtAuthException("Invalid token: " + e.getMessage());
+            throw new JwtAuthException("Invalid token");
         }
     }
 }
