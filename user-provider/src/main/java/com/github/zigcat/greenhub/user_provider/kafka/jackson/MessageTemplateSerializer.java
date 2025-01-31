@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zigcat.greenhub.user_provider.dto.mq.template.MessageTemplate;
 import lombok.NoArgsConstructor;
 import org.apache.kafka.common.serialization.Serializer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 

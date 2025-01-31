@@ -41,6 +41,11 @@ public class UserService {
         return userRepository.findById(userId);
     }
 
+    public Mono<AppUser> retrieveByEmail(String email){
+        return userRepository.findByEmail(email)
+                .defaultIfEmpty(new AppUser());
+    }
+
     public Mono<UserAuthResponse> retrieveByIdWithScopes(Long id){
         return userRepository.findUserByIdWithScopes(id)
                 .as(UserUtils::mapAuthRows)
@@ -53,12 +58,7 @@ public class UserService {
                 .defaultIfEmpty(new UserAuthResponse());
     }
 
-    public Mono<AppUser> retrieveByEmail(String email){
-        return userRepository.findByEmail(email)
-                .defaultIfEmpty(new AppUser());
-    }
-
-    public Mono<AppUser> create(Mono<UserDTO> userDTO){
+    public Mono<AppUser> register(Mono<UserDTO> userDTO){
         return userDTO
                 .map(dto -> {
                     log.info("Registering user...");

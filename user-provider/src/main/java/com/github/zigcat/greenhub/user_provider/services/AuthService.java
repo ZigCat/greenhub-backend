@@ -40,7 +40,7 @@ public class AuthService {
         CompletableFuture<RegisterAuthServiceReply> replyFuture = event.getReplyFuture();
         UserDTO userDTO = UserUtils.toDTO(request);
         log.info("Making database call...");
-        service.create(Mono.just(userDTO))
+        service.register(Mono.just(userDTO))
                 .doOnNext(user -> {
                     log.info("Database call finished successfully");
                     RegisterResponse response = UserUtils.toRegResponse(user);

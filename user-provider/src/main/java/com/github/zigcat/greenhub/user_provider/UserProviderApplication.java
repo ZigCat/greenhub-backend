@@ -1,6 +1,9 @@
 package com.github.zigcat.greenhub.user_provider;
 
 import com.github.zigcat.greenhub.user_provider.adapters.MessageQueryAdapter;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Contact;
+import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
