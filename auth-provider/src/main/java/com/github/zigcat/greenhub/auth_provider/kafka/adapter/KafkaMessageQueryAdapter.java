@@ -11,7 +11,6 @@ import com.github.zigcat.greenhub.auth_provider.events.replies.AuthorizeAuthServ
 import com.github.zigcat.greenhub.auth_provider.events.events.AuthorizeMessageQueryAdapterEvent;
 import com.github.zigcat.greenhub.auth_provider.dto.mq.template.MessageTemplate;
 import com.github.zigcat.greenhub.auth_provider.exceptions.ServerException;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;

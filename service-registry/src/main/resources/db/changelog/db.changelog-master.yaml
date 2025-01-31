@@ -49,3 +49,39 @@ databaseChangeLog:
             columnName: user_id
             tableName: users
             defaultValueComputed: "nextval('user_sequence')"
+  - changeSet:
+      id: 2
+      author: ZigCat
+      changes:
+        - createSequence:
+            sequenceName: scope_sequence
+            startValue: 1
+            allocationSize: 1
+        - createTable:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: scope_id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scopes
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: user_scopes
+            baseColumnNames: user_id
+            constraintName: fk_user_scopes_user_id
+            referencedTableName: users
+            referencedColumnNames: user_id
+        - addDefaultValue:
+            columnName: scope_id
+            tableName: user_scopes
+            defaultValueComputed: "nextval('scope_sequence')"

@@ -39,8 +39,6 @@ public class JwtProvider {
                 .setExpiration(accessExpiration)
                 .signWith(jwtAccessSecret)
                 .claim("id", user.getId())
-                .claim("fname", user.getFname())
-                .claim("lname", user.getLname())
                 .compact();
     }
 

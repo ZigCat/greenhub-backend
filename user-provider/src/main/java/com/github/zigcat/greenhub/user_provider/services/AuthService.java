@@ -59,16 +59,9 @@ public class AuthService {
     public void handleAuthorizationEvent(AuthorizeMessageQueryAdapterEvent event){
         String username = event.getRequest().getUsername();
         CompletableFuture<AuthorizeAuthServiceReply> replyFuture = event.getReplyFuture();
-        service.retrieveByEmail(username)
-                .doOnNext(user -> {
-                    if(user.getId() != null){
-                        UserAuthResponse response = new UserAuthResponse(
-                                user.getId(),
-                                user.getFname(),
-                                user.getLname(),
-                                user.getEmail(),
-                                user.getRole().toString()
-                        );
+        service.retrieveByEmailWithScopes(username)
+                .doOnNext(response -> {
+                    if(response.getId() != null){
                         AuthorizeAuthServiceReply reply = new AuthorizeAuthServiceReply(response);
                         replyFuture.complete(reply);
                     } else {
@@ -87,16 +80,14 @@ public class AuthService {
         LoginRequest request = event.getRequest();
         CompletableFuture<AuthorizeAuthServiceReply> replyFuture = event.getReplyFuture();
         checkUser(request.getUsername(), request.getPassword())
-                .doOnNext(user -> {
-                    UserAuthResponse response = new UserAuthResponse(
-                            user.getId(),
-                            user.getFname(),
-                            user.getLname(),
-                            user.getEmail(),
-                            user.getRole().toString()
-                    );
-                    AuthorizeAuthServiceReply reply = new AuthorizeAuthServiceReply(response);
-                    replyFuture.complete(reply);
+                .flatMap(user -> service.retrieveByIdWithScopes(user.getId()))
+                .doOnNext(response -> {
+                    if(response.getId() != null){
+                        AuthorizeAuthServiceReply reply = new AuthorizeAuthServiceReply(response);
+                        replyFuture.complete(reply);
+                    } else {
+                        throw new NotFoundException("User not found");
+                    }
                 })
                 .doOnError(e -> {
                     log.error("Error while processing event ", e);
