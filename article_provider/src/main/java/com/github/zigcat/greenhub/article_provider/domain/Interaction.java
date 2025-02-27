@@ -15,4 +15,13 @@ public class Interaction {
     private boolean star;
     private Integer views;
     private Integer rating;
+
+    public float calculateScore(){
+        float score = 0;
+        if (like) score += 2.0;
+        if (star) score += 3.0;
+        if (views != null) score += (float) (views * 0.01);
+        if (rating != null) score += rating;
+        return score;
+    }
 }

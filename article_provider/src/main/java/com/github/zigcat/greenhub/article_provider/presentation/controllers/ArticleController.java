@@ -2,6 +2,7 @@ package com.github.zigcat.greenhub.article_provider.presentation.controllers;
 
 import com.github.zigcat.greenhub.article_provider.application.usecases.ArticleService;
 import com.github.zigcat.greenhub.article_provider.application.usecases.PermissionService;
+import com.github.zigcat.greenhub.article_provider.application.usecases.RecommendationService;
 import com.github.zigcat.greenhub.article_provider.domain.Article;
 import com.github.zigcat.greenhub.article_provider.presentation.DTO;
 import org.springframework.http.HttpStatus;
@@ -15,9 +16,14 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/article")
 public class ArticleController {
     private final ArticleService service;
+    private final RecommendationService recommendationService;
 
-    public ArticleController(ArticleService service) {
+    public ArticleController(
+            ArticleService service,
+            RecommendationService recommendationService
+    ) {
         this.service = service;
+        this.recommendationService = recommendationService;
     }
 
     @GetMapping("/{id}")
@@ -29,6 +35,11 @@ public class ArticleController {
     @GetMapping
     public Flux<Article> getAll(){
         return service.list();
+    }
+
+    @GetMapping("/recommend")
+    public Flux<Article> getRecommendations(ServerHttpRequest request){
+        return recommendationService.getRecommendations(request);
     }
 
     @PostMapping
