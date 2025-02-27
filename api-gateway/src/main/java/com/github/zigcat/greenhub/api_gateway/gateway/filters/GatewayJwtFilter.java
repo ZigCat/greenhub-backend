@@ -49,9 +49,10 @@ public class GatewayJwtFilter implements GatewayFilterFactory<GatewayJwtFilter.C
             log.info("Token is valid "+token);
             return authService.authorizeByToken(token)
                     .flatMap(response -> {
+                        exchange.getRequest().mutate().header("X-User-Id", response.getId().toString());
                         exchange.getRequest().mutate().header("X-Username", response.getEmail());
-                        exchange.getRequest().mutate().header("X-Scopes", response.getScopes());
-                        exchange.getRequest().mutate().header("X-Role", response.getRole());
+                        exchange.getRequest().mutate().header("X-User-Scopes", response.getScopes());
+                        exchange.getRequest().mutate().header("X-User-Role", response.getRole());
                         return chain.filter(exchange);
                     })
                     .onErrorResume(AuthException.class, e -> this.onError(exchange, HttpStatus.UNAUTHORIZED, e.getMessage()))

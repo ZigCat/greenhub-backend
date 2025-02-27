@@ -7,6 +7,7 @@ import com.github.zigcat.greenhub.user_provider.dto.rest.entities.UserDTO;
 import com.github.zigcat.greenhub.user_provider.entities.AppUser;
 import com.github.zigcat.greenhub.user_provider.entities.Role;
 import com.github.zigcat.greenhub.user_provider.entities.Scope;
+import com.github.zigcat.greenhub.user_provider.entities.ScopeType;
 import io.r2dbc.spi.Row;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -63,8 +64,8 @@ public class UserUtils {
 
     public static List<Scope> defaultUserScopes(Long userId){
         return List.of(
-                new Scope(userId, "articles.read"),
-                new Scope(userId, "users.read")
+                new Scope(userId, ScopeType.USER_READ.getScope()),
+                new Scope(userId, ScopeType.ARTICLE_READ.getScope())
         );
     }
 }
