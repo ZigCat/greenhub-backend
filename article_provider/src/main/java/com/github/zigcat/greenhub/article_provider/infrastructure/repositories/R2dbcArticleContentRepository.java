@@ -42,11 +42,23 @@ public class R2dbcArticleContentRepository implements ArticleContentRepository {
 
     @Override
     public Mono<ArticleContentModel> save(ArticleContentModel model) {
-        return repository.save(model);
+        return repository.save(model)
+                .onErrorMap(e -> {
+                    if(e instanceof R2dbcException){
+                        throw new BadRequestInfrastructureException("Illegal data");
+                    }
+                    throw new DatabaseException("Error while accessing source");
+                });
     }
 
     @Override
     public Mono<Void> delete(Long id) {
-        return repository.deleteByArticleId(id);
+        return repository.deleteByArticleId(id)
+                .onErrorMap(e -> {
+                    if(e instanceof R2dbcException){
+                        throw new BadRequestInfrastructureException("Illegal data");
+                    }
+                    throw new DatabaseException("Error while accessing source");
+                });
     }
 }

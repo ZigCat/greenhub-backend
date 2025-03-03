@@ -32,18 +32,18 @@ spring:
             - name: GatewayJwtFilter
             - AddRequestHeader=X-Request-Source, Gateway
             - StripPrefix=1
-        - id: article-protected
+        - id: platform-protected
           uri: http://localhost:8083
           predicates:
-            - Path=/article/protected/**
+            - Path=/platform/protected/**
           filters:
             - name: GatewayJwtFilter
             - AddRequestHeader=X-Request-Source, Gateway
             - StripPrefix=1
-        - id: article-public
+        - id: platform-public
           uri: http://localhost:8083
           predicates:
-            - Path=/article/public/**
+            - Path=/platform/public/**
           filters:
             - AddRequestHeader=X-Request-Source, Gateway
             - StripPrefix=1

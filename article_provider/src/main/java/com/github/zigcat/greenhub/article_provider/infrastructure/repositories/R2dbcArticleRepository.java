@@ -3,6 +3,7 @@ package com.github.zigcat.greenhub.article_provider.infrastructure.repositories;
 import com.github.zigcat.greenhub.article_provider.domain.Article;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleRepository;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.r2dbc.ReactiveArticleRepository;
+import com.github.zigcat.greenhub.article_provider.domain.schemas.ArticleStatus;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.BadRequestInfrastructureException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.DatabaseException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleModel;
@@ -26,6 +27,17 @@ public class R2dbcArticleRepository implements ArticleRepository {
         return repository
                 .findAll()
                 .onErrorMap(e -> new DatabaseException(e.getMessage()));
+    }
+
+    @Override
+    public Flux<ArticleModel> findAllByStatus(ArticleStatus articleStatus) {
+        return repository.findAllByArticleStatus(articleStatus)
+                .onErrorMap(e -> {
+                    if(e instanceof IllegalArgumentException){
+                        throw new BadRequestInfrastructureException(e.getMessage());
+                    }
+                    throw new DatabaseException(e.getMessage());
+                });
     }
 
     @Override

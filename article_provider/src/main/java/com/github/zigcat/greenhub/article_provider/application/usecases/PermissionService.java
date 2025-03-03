@@ -7,15 +7,34 @@ import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class PermissionService {
     public AuthorizationData extractAuthData(ServerHttpRequest request){
         return new AuthorizationData(
-                Long.valueOf(request.getHeaders().getFirst("X-User-Id")),
+                Optional.ofNullable(request.getHeaders().getFirst("X-User-Id"))
+                        .map(Long::valueOf)
+                        .orElse(null),
                 request.getHeaders().getFirst("X-Username"),
-                Role.valueOf(request.getHeaders().getFirst("X-User-Role")),
+                Optional.ofNullable(request.getHeaders().getFirst("X-User-Role"))
+                        .map(role -> {
+                            try{
+                                return Role.valueOf(role);
+                            } catch (IllegalArgumentException e){
+                                return null;
+                            }
+                        })
+                        .orElse(null),
                 request.getHeaders().getFirst("X-User-Scopes")
         );
+    }
+
+    public boolean isAuthPresent(AuthorizationData auth){
+        return auth.getId() != null
+                && auth.getUsername() != null
+                && auth.getRole() != null
+                && auth.getScopes() != null;
     }
     public boolean isAdmin(AuthorizationData auth){
         return auth.isAdmin();

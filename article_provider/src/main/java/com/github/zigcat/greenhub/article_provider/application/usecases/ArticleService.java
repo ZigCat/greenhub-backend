@@ -3,10 +3,12 @@ package com.github.zigcat.greenhub.article_provider.application.usecases;
 import com.github.zigcat.greenhub.article_provider.application.exceptions.BadRequestAppException;
 import com.github.zigcat.greenhub.article_provider.application.exceptions.ForbiddenAppException;
 import com.github.zigcat.greenhub.article_provider.application.exceptions.NotFoundAppException;
+import com.github.zigcat.greenhub.article_provider.domain.AppUser;
 import com.github.zigcat.greenhub.article_provider.domain.Article;
 import com.github.zigcat.greenhub.article_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleContentRepository;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleRepository;
+import com.github.zigcat.greenhub.article_provider.domain.interfaces.UserPort;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.ArticleStatus;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleContentModel;
@@ -26,39 +28,101 @@ public class ArticleService {
     private final ArticleRepository repository;
     private final ArticleContentRepository contentRepository;
     private final PermissionService permissions;
+    private final UserPort userPort;
 
     public ArticleService(
             ArticleRepository repository,
             ArticleContentRepository contentRepository,
-            PermissionService permissions) {
+            PermissionService permissions,
+            UserPort userPort
+    ) {
         this.repository = repository;
         this.contentRepository = contentRepository;
         this.permissions = permissions;
+        this.userPort = userPort;
     }
 
-    public Flux<Article> list(){
-        return repository
-                .findAll()
-                .map(model -> ArticleUtils.toEntity(model, null));
-    }
-
-    public Mono<Article> retrieve(Long id){
-        return repository
-                .findById(id)
+    private Mono<Article> retrieve(Long id){
+        return repository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundAppException("Article not found")))
                 .flatMap(model -> contentRepository.findById(id)
                         .map(content -> ArticleUtils.toEntity(model, content)));
     }
 
+    public Flux<DTO.ArticleGetDTO> list(
+            ServerHttpRequest request,
+            String articleStatus,
+            Long creatorId
+    ){
+        AuthorizationData auth = permissions.extractAuthData(request);
+        ArticleStatus status;
+        if(!permissions.isAdmin(auth)){
+            status = ArticleStatus.GRANTED;
+        } else {
+            try{
+               status = ArticleStatus.valueOf(articleStatus);
+            } catch (IllegalArgumentException e){
+                throw new BadRequestAppException("Wrong param");
+            }
+        }
+        return repository
+                .findAllByStatus(status)
+                .filter(model -> {
+                    if(creatorId == null) return true;
+                    return model.getCreator().equals(creatorId);
+                })
+                .switchIfEmpty(Flux.error(new NotFoundAppException("Articles not found")))
+                .flatMap(model ->
+                    userPort.retrieve(model.getCreator())
+                            .map(creator -> new DTO.ArticleGetDTO(
+                                    model.getId(),
+                                    model.getTitle(),
+                                    model.getCategory(),
+                                    model.getArticleStatus().toString(),
+                                    new DTO.UserArticleDTO(
+                                            creator.getId(),
+                                            creator.getFname(),
+                                            creator.getLname(),
+                                            creator.getRole()),
+                                    null
+                            ))
+                );
+    }
+
+    public Mono<DTO.ArticleGetDTO> listById(ServerHttpRequest request, Long id){
+        AuthorizationData auth = permissions.extractAuthData(request);
+        return retrieve(id)
+                .filter(model -> {
+                    if(model.getArticleStatus().equals(ArticleStatus.GRANTED)){
+                        return true;
+                    } else {
+                        if(auth.isAdmin() || model.getCreator().equals(auth.getId())){
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .switchIfEmpty(Mono.error(new NotFoundAppException("Article not found")))
+                .flatMap(entity -> userPort.retrieve(entity.getCreator())
+                                .map(creator -> new DTO.ArticleGetDTO(
+                                        entity.getId(),
+                                        entity.getTitle(),
+                                        entity.getCategory(),
+                                        entity.getArticleStatus().toString(),
+                                        new DTO.UserArticleDTO(
+                                                creator.getId(),
+                                                creator.getFname(),
+                                                creator.getLname(),
+                                                creator.getRole()),
+                                        entity.getContent())
+                                ));
+    }
+
     @Transactional
     public Mono<Article> create(DTO.ArticleCreateDTO dto, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
-        if(dto.isMissing()){
-            return Mono.error(new BadRequestAppException("Missing data"));
-        }
-        if(!permissions.canPublish(auth)){
-            return Mono.error(new ForbiddenAppException("User can't publish articles"));
-        }
+        if(dto.isMissing()) return Mono.error(new BadRequestAppException("Missing data"));
+        if(!permissions.canPublish(auth)) return Mono.error(new ForbiddenAppException("User can't publish articles"));
         PaidStatus paidStatus = permissions.canBePaid(auth);
         ArticleModel articleModel = new ArticleModel(dto.title(), LocalDateTime.now(), ArticleStatus.MODERATION, paidStatus, auth.getId(), dto.category());
         return repository.save(articleModel)
@@ -73,12 +137,8 @@ public class ArticleService {
         AuthorizationData auth = permissions.extractAuthData(request);
         return retrieve(articleId)
                 .flatMap(entity -> {
-                    if (dto.isMissing()) {
-                        return Mono.error(new BadRequestAppException("Missing data"));
-                    }
-                    if (!permissions.canEdit(auth, entity)) {
-                        return Mono.error(new ForbiddenAppException("User can't edit article(s)"));
-                    }
+                    if (dto.isMissing()) return Mono.error(new BadRequestAppException("Missing data"));
+                    if (!permissions.canEdit(auth, entity)) return Mono.error(new ForbiddenAppException("User can't edit article(s)"));
                     entity.setTitle(dto.title());
                     entity.setContent(dto.content());
                     entity.setCategory(dto.category());
@@ -92,6 +152,22 @@ public class ArticleService {
                     return Mono.zip(savedArticle, updatedContent)
                             .map(tuple -> ArticleUtils.toEntity(tuple.getT1(), tuple.getT2()));
                 });
+    }
+
+    public Mono<Article> moderate(DTO.ArticleModerateDTO dto, Long id, ServerHttpRequest request){
+        AuthorizationData auth = permissions.extractAuthData(request);
+        if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access denied"));
+        try{
+            ArticleStatus status = ArticleStatus.valueOf(dto.status());
+            return repository.findById(id)
+                    .flatMap(model -> {
+                        model.setArticleStatus(status);
+                        return repository.save(model)
+                                .map(saved -> ArticleUtils.toEntity(saved, null));
+                    });
+        } catch (IllegalArgumentException e){
+            return Mono.error(new BadRequestAppException("Wrong param"));
+        }
     }
 
     @Transactional

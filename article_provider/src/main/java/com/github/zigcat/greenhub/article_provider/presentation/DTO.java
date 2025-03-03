@@ -16,6 +16,26 @@ public class DTO {
         }
     }
 
+    public record ArticleGetDTO(
+            Long id,
+            String title,
+            Long category,
+            String status,
+            UserArticleDTO user,
+            String content
+    ){}
+
+    public record ArticleModerateDTO(
+            String status
+    ){}
+
+    public record UserArticleDTO(
+            Long id,
+            String fname,
+            String lname,
+            String role
+    ){}
+
     public record ApiError(
             String message,
             int status

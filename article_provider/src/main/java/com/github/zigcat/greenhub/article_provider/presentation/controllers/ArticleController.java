@@ -12,7 +12,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/protected")
+@RequestMapping("/protected/article")
 public class ArticleController {
     private final ArticleService service;
     private final RecommendationService recommendationService;
@@ -23,6 +23,24 @@ public class ArticleController {
     ) {
         this.service = service;
         this.recommendationService = recommendationService;
+    }
+
+    @GetMapping
+    public Flux<DTO.ArticleGetDTO> getAll(
+            ServerHttpRequest request,
+            @RequestParam(required = false, defaultValue = "GRANTED") String status,
+            @RequestParam(required = false) Long creator
+            ){
+        return service.list(request, status, creator);
+    }
+
+    @GetMapping("/{id}")
+    public Mono<ResponseEntity<DTO.ArticleGetDTO>> getById(
+            ServerHttpRequest request,
+            @PathVariable("id") Long id
+    ){
+        return service.listById(request, id)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/recommend")
@@ -46,6 +64,16 @@ public class ArticleController {
             ServerHttpRequest request
     ){
         return service.update(dto, id, request)
+                .map(ResponseEntity::ok);
+    }
+
+    @PatchMapping("/moderate/{id}")
+    public Mono<ResponseEntity<Article>> moderate(
+            @RequestBody DTO.ArticleModerateDTO dto,
+            @PathVariable("id") Long id,
+            ServerHttpRequest request
+    ){
+        return service.moderate(dto, id, request)
                 .map(ResponseEntity::ok);
     }
 

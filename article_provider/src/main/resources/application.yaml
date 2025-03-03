@@ -2,7 +2,7 @@ server:
   port: 8083
 spring:
   application:
-    name: article_provider
+    name: article-provider
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_DB_HOST}/greenhub
     username: ${DB_USERNAME}
