@@ -16,6 +16,10 @@ public class DTO {
         }
     }
 
+    public record CategoryCreateDTO(
+            String name
+    ){}
+
     public record ArticleGetDTO(
             Long id,
             String title,

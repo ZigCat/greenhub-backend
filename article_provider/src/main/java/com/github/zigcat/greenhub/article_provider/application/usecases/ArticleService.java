@@ -154,15 +154,16 @@ public class ArticleService {
                 });
     }
 
+    @Transactional
     public Mono<Article> moderate(DTO.ArticleModerateDTO dto, Long id, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access denied"));
         try{
             ArticleStatus status = ArticleStatus.valueOf(dto.status());
-            return repository.findById(id)
-                    .flatMap(model -> {
-                        model.setArticleStatus(status);
-                        return repository.save(model)
+            return retrieve(id)
+                    .flatMap(entity -> {
+                        entity.setArticleStatus(status);
+                        return repository.save(ArticleUtils.toModel(entity))
                                 .map(saved -> ArticleUtils.toEntity(saved, null));
                     });
         } catch (IllegalArgumentException e){
