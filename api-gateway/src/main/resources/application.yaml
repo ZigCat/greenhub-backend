@@ -32,6 +32,21 @@ spring:
             - name: GatewayJwtFilter
             - AddRequestHeader=X-Request-Source, Gateway
             - StripPrefix=1
+        - id: article-protected
+          uri: http://localhost:8083
+          predicates:
+            - Path=/article/protected/**
+          filters:
+            - name: GatewayJwtFilter
+            - AddRequestHeader=X-Request-Source, Gateway
+            - StripPrefix=1
+        - id: article-public
+          uri: http://localhost:8083
+          predicates:
+            - Path=/article/public/**
+          filters:
+            - AddRequestHeader=X-Request-Source, Gateway
+            - StripPrefix=1
 springdoc:
   enable-native-support: true
   api-docs:

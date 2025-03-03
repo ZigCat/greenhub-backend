@@ -7,7 +7,7 @@ spring:
   application:
     name: user-provider
   r2dbc:
-    url: r2dbc:postgresql://${DB_HOST}/greenhub
+    url: r2dbc:postgresql://${POSTGRES_DB_HOST}/greenhub
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 

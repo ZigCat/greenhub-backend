@@ -3,13 +3,13 @@ server:
 spring:
   application:
     name: article_provider
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_DB_HOST}/greenhub
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   data:
     mongodb:
-      uri: mongodb://${DB_USERNAME}:${DB_PASSWORD}@${MONGO_DB_HOST}/greenhub
-    r2dbc:
-      url: r2dbc:postgresql://${POSTGRES_DB_HOST}/greenhub
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
+      uri: mongodb://${DB_USERNAME}:${DB_PASSWORD}@${MONGO_DB_HOST}/greenhub?authSource=admin
   redis:
     port: 6379
     host: 172.18.173.155

@@ -15,6 +15,7 @@ import com.github.zigcat.greenhub.article_provider.infrastructure.utils.ArticleU
 import com.github.zigcat.greenhub.article_provider.presentation.DTO;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -49,6 +50,7 @@ public class ArticleService {
                         .map(content -> ArticleUtils.toEntity(model, content)));
     }
 
+    @Transactional
     public Mono<Article> create(DTO.ArticleCreateDTO dto, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(dto.isMissing()){
@@ -62,9 +64,11 @@ public class ArticleService {
         return repository.save(articleModel)
                 .flatMap(model -> contentRepository
                         .save(new ArticleContentModel(model.getId(), dto.content()))
-                        .map(content -> ArticleUtils.toEntity(model, content)));
+                        .map(content -> ArticleUtils.toEntity(model, content)))
+                .onErrorResume(ex -> repository.delete(articleModel.getId()).then(Mono.error(ex)));
     }
 
+    @Transactional
     public Mono<Article> update(DTO.ArticleCreateDTO dto, Long articleId, ServerHttpRequest request) {
         AuthorizationData auth = permissions.extractAuthData(request);
         return retrieve(articleId)
@@ -90,6 +94,7 @@ public class ArticleService {
                 });
     }
 
+    @Transactional
     public Mono<Void> delete(Long articleId, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         return retrieve(articleId)
