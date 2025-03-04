@@ -8,20 +8,23 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Interaction {
-    private String id;
-    private Long userId;
     private Long articleId;
-    private boolean like;
-    private boolean star;
+    private Long userId;
+    private Integer likes;
     private Integer views;
-    private Integer rating;
+    private Double rating;
 
-    public float calculateScore(){
-        float score = 0;
-        if (like) score += 2.0;
-        if (star) score += 3.0;
-        if (views != null) score += (float) (views * 0.01);
-        if (rating != null) score += rating;
-        return score;
+    public Interaction(Long articleId) {
+        this.articleId = articleId;
+        this.likes = 0;
+        this.views = 0;
+        this.rating = 0.0;
+    }
+
+    public Interaction(Long articleId, Integer likes, Integer views, Double rating) {
+        this.articleId = articleId;
+        this.likes = likes;
+        this.views = views;
+        this.rating = rating;
     }
 }

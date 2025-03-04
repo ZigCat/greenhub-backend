@@ -2,14 +2,12 @@ package com.github.zigcat.greenhub.article_provider.application.usecases;
 
 import com.github.zigcat.greenhub.article_provider.application.exceptions.ConflictAppException;
 import com.github.zigcat.greenhub.article_provider.application.exceptions.ForbiddenAppException;
-import com.github.zigcat.greenhub.article_provider.application.exceptions.NotFoundAppException;
 import com.github.zigcat.greenhub.article_provider.application.exceptions.ServerErrorAppException;
 import com.github.zigcat.greenhub.article_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.article_provider.domain.Category;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.CategoryRepository;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.CategoryModel;
-import com.github.zigcat.greenhub.article_provider.infrastructure.utils.CategoryUtils;
-import com.github.zigcat.greenhub.article_provider.presentation.DTO;
+import com.github.zigcat.greenhub.article_provider.utils.CategoryUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
@@ -30,14 +28,9 @@ public class CategoryService {
         this.permissions = permissions;
     }
 
-    private Mono<Category> retrieve(Long id){
+    public Mono<Category> retrieve(Long id){
         return repository.findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundAppException("Category not found")))
                 .map(CategoryUtils::toEntity);
-    }
-
-    public Mono<Category> listById(Long id){
-        return retrieve(id);
     }
 
     public Flux<Category> list(){
@@ -46,21 +39,21 @@ public class CategoryService {
     }
 
     @Transactional
-    public Mono<Category> create(DTO.CategoryCreateDTO dto, ServerHttpRequest request){
+    public Mono<Category> create(Category category, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access denied"));
-        return repository.save(new CategoryModel(dto.name()))
+        return repository.save(new CategoryModel(category.getName()))
                 .map(CategoryUtils::toEntity);
     }
 
     @Transactional
-    public Mono<Category> update(Long id, DTO.CategoryCreateDTO dto, ServerHttpRequest request){
+    public Mono<Category> update(Long id, Category category, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access Denied"));
-        return retrieve(id)
-                .flatMap(entity -> {
-                    entity.setName(dto.name());
-                    return repository.save(CategoryUtils.toModel(entity))
+        return repository.findById(id)
+                .flatMap(model -> {
+                    model.setName(category.getName());
+                    return repository.save(model)
                             .map(CategoryUtils::toEntity);
                 });
     }
@@ -69,8 +62,8 @@ public class CategoryService {
     public Mono<Void> delete(Long id, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access denied"));
-        return retrieve(id)
-                .flatMap(entity -> repository.delete(entity.getId())
+        return repository.findById(id)
+                .flatMap(model -> repository.delete(model.getId())
                         .onErrorMap(e -> {
                             if(e instanceof DataIntegrityViolationException){
                                 throw new ConflictAppException("Unsafe deletion, denied");

@@ -1,6 +1,5 @@
 package com.github.zigcat.greenhub.article_provider.application.usecases;
 
-import com.github.zigcat.greenhub.article_provider.domain.Article;
 import com.github.zigcat.greenhub.article_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
@@ -48,12 +47,12 @@ public class PermissionService {
         return auth.canPublishArticles();
     }
 
-    public boolean canEdit(AuthorizationData auth, Article entity){
-        return auth.canPublishArticles() && entity.getCreator().equals(auth.getId());
+    public boolean canEdit(AuthorizationData auth, Long creator){
+        return auth.canPublishArticles() && creator.equals(auth.getId());
     }
 
-    public boolean canDelete(AuthorizationData auth, Article entity){
-        return auth.canPublishArticles() && (entity.getCreator().equals(auth.getId()) || auth.isAdmin());
+    public boolean canDelete(AuthorizationData auth, Long creator){
+        return auth.canPublishArticles() && (creator.equals(auth.getId()) || auth.isAdmin());
     }
 
     public PaidStatus canBePaid(AuthorizationData auth){

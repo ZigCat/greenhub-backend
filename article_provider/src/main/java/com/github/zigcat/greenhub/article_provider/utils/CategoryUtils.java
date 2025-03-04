@@ -1,7 +1,8 @@
-package com.github.zigcat.greenhub.article_provider.infrastructure.utils;
+package com.github.zigcat.greenhub.article_provider.utils;
 
 import com.github.zigcat.greenhub.article_provider.domain.Category;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.CategoryModel;
+import com.github.zigcat.greenhub.article_provider.presentation.DTO;
 import org.springframework.stereotype.Component;
 
 public class CategoryUtils {
@@ -17,5 +18,9 @@ public class CategoryUtils {
                 model.getId(),
                 model.getName()
         );
+    }
+
+    public static Category toEntity(DTO.CategoryDTO dto){
+        return new Category(dto.name());
     }
 }

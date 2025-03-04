@@ -1,13 +1,12 @@
-package com.github.zigcat.greenhub.article_provider.infrastructure.utils;
+package com.github.zigcat.greenhub.article_provider.utils;
 
+import com.github.zigcat.greenhub.article_provider.domain.AppUser;
 import com.github.zigcat.greenhub.article_provider.domain.Article;
-import com.github.zigcat.greenhub.article_provider.domain.schemas.ArticleStatus;
-import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
+import com.github.zigcat.greenhub.article_provider.domain.Category;
+import com.github.zigcat.greenhub.article_provider.domain.Interaction;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleContentModel;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleModel;
 import com.github.zigcat.greenhub.article_provider.presentation.DTO;
-
-import java.time.LocalDateTime;
 
 public class ArticleUtils {
     public static ArticleModel toModel(Article entity){
@@ -17,8 +16,8 @@ public class ArticleUtils {
                 entity.getCreationDate(),
                 entity.getArticleStatus(),
                 entity.getPaidStatus(),
-                entity.getCreator(),
-                entity.getCategory()
+                entity.getCreator().getId(),
+                entity.getCategory().getId()
         );
     }
 
@@ -29,7 +28,13 @@ public class ArticleUtils {
         );
     }
 
-    public static Article toEntity(ArticleModel model, ArticleContentModel content){
+    public static Article toEntity(
+            ArticleModel model,
+            ArticleContentModel content,
+            AppUser creator,
+            Category category,
+            Interaction interaction
+    ){
         String contentData = null;
         if(content != null) contentData = content.getContent();
         return new Article(
@@ -39,8 +44,13 @@ public class ArticleUtils {
                 model.getCreationDate(),
                 model.getArticleStatus(),
                 model.getPaidStatus(),
-                model.getCreator(),
-                model.getCategory()
+                creator,
+                category,
+                interaction
         );
+    }
+
+    public static Article toEntity(DTO.ArticleDTO dto){
+        return new Article(dto.title(), dto.content(), new Category(dto.category()));
     }
 }

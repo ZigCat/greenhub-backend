@@ -12,12 +12,12 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class RedisConfiguration {
     @Bean
-    public ReactiveRedisTemplate<String, DataModel> dataModelRedisTemplate(ReactiveRedisConnectionFactory factory) {
-        Jackson2JsonRedisSerializer<DataModel> valueSerializer = new Jackson2JsonRedisSerializer<>(DataModel.class);
+    public ReactiveRedisTemplate<String, String> dataModelRedisTemplate(ReactiveRedisConnectionFactory factory) {
+        Jackson2JsonRedisSerializer<String> valueSerializer = new Jackson2JsonRedisSerializer<>(String.class);
         StringRedisSerializer keySerializer = new StringRedisSerializer();
-        RedisSerializationContext<String, DataModel> context =
+        RedisSerializationContext<String, String> context =
                 RedisSerializationContext
-                        .<String, DataModel>newSerializationContext(keySerializer)
+                        .<String, String>newSerializationContext(keySerializer)
                         .value(valueSerializer)
                         .build();
         return new ReactiveRedisTemplate<>(factory, context);

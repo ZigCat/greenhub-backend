@@ -1,13 +1,13 @@
 package com.github.zigcat.greenhub.article_provider.infrastructure.adapters;
 
 import com.github.zigcat.greenhub.article_provider.domain.AppUser;
-import com.github.zigcat.greenhub.article_provider.domain.interfaces.UserPort;
+import com.github.zigcat.greenhub.article_provider.domain.interfaces.UserRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Component
-public class UserWebClientAdapter implements UserPort {
+public class UserWebClientAdapter implements UserRepository {
     private final WebClient webClient;
 
     public UserWebClientAdapter(WebClient.Builder webClientBuilder) {

@@ -2,6 +2,7 @@ package com.github.zigcat.greenhub.article_provider.presentation.controllers;
 
 import com.github.zigcat.greenhub.article_provider.application.usecases.CategoryService;
 import com.github.zigcat.greenhub.article_provider.domain.Category;
+import com.github.zigcat.greenhub.article_provider.utils.CategoryUtils;
 import com.github.zigcat.greenhub.article_provider.presentation.DTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,20 +21,20 @@ public class CategoryController {
 
     @PostMapping
     public Mono<ResponseEntity<Category>> create(
-            @RequestBody DTO.CategoryCreateDTO dto,
+            @RequestBody DTO.CategoryDTO dto,
             ServerHttpRequest request
     ){
-        return service.create(dto, request)
+        return service.create(CategoryUtils.toEntity(dto), request)
                 .map(entity -> new ResponseEntity<>(entity, HttpStatus.CREATED));
     }
 
     @PutMapping("/{id}")
     public Mono<ResponseEntity<Category>> update(
             @PathVariable("id") Long id,
-            @RequestBody DTO.CategoryCreateDTO dto,
+            @RequestBody DTO.CategoryDTO dto,
             ServerHttpRequest request
             ){
-        return service.update(id, dto, request)
+        return service.update(id, CategoryUtils.toEntity(dto), request)
                 .map(ResponseEntity::ok);
     }
 

@@ -23,7 +23,7 @@ public class CategoryPublicController {
     public Mono<ResponseEntity<Category>> getById(
             @PathVariable("id") Long id
     ){
-        return service.listById(id)
+        return service.retrieve(id)
                 .map(ResponseEntity::ok);
     }
 

@@ -19,16 +19,16 @@ public class ArticlePublicController {
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<DTO.ArticleGetDTO>> getById(
+    public Mono<ResponseEntity<Article>> getById(
             ServerHttpRequest request,
             @PathVariable("id") Long id
     ){
-        return service.listById(request, id)
+        return service.retrieve(request, id)
                 .map(ResponseEntity::ok);
     }
 
     @GetMapping
-    public Flux<DTO.ArticleGetDTO> getAll(
+    public Flux<Article> getAll(
             ServerHttpRequest request,
             @RequestParam(required = false) Long creator){
         return service.list(request, "GRANTED", creator);

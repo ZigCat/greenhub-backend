@@ -1,9 +1,9 @@
 package com.github.zigcat.greenhub.article_provider.infrastructure.repositories;
 
-import com.github.zigcat.greenhub.article_provider.domain.InteractionProjection;
+import com.github.zigcat.greenhub.article_provider.infrastructure.projections.InteractionProjection;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.InteractionRepository;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.RecommendationRepository;
-import com.github.zigcat.greenhub.article_provider.infrastructure.utils.InteractionUtils;
+import com.github.zigcat.greenhub.article_provider.utils.InteractionUtils;
 import org.apache.mahout.cf.taste.impl.common.FastByIDMap;
 import org.apache.mahout.cf.taste.impl.model.GenericDataModel;
 import org.apache.mahout.cf.taste.impl.model.GenericUserPreferenceArray;
@@ -18,17 +18,16 @@ import java.util.stream.Collectors;
 
 @Repository
 public class ReactiveRecommendationRepository implements RecommendationRepository {
-    private final InteractionRepository repository;
+    private final InteractionRepository interactions;
 
-    public ReactiveRecommendationRepository(InteractionRepository repository) {
-        this.repository = repository;
+    public ReactiveRecommendationRepository(InteractionRepository interactions) {
+        this.interactions = interactions;
     }
 
     @Override
     public Mono<DataModel> loadModel() {
-        return repository.findAll()
+        return interactions.findAll()
                 .filter(interaction -> interaction.getUserId() != null && interaction.getArticleId() != null)
-                .map(InteractionUtils::toEntity)
                 .map(InteractionUtils::toProjection)
                 .distinct()
                 .collectList()

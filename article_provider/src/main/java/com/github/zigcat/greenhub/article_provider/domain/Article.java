@@ -18,6 +18,13 @@ public class Article {
     private LocalDateTime creationDate;
     private ArticleStatus articleStatus;
     private PaidStatus paidStatus;
-    private Long creator;
-    private Long category;
+    private AppUser creator;
+    private Category category;
+    private Interaction interaction;
+
+    public Article(String title, String content, Category category) {
+        this.title = title;
+        this.content = content;
+        this.category = category;
+    }
 }
