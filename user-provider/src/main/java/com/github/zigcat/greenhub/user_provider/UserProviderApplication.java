@@ -1,9 +1,7 @@
 package com.github.zigcat.greenhub.user_provider;
 
-import com.github.zigcat.greenhub.user_provider.adapters.MessageQueryAdapter;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Contact;
-import io.swagger.v3.oas.annotations.info.Info;
+import com.github.zigcat.greenhub.user_provider.application.usecases.MessageQueryService;
+import com.github.zigcat.greenhub.user_provider.domain.interfaces.MessageQueryAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -11,11 +9,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class UserProviderApplication implements CommandLineRunner {
-	private MessageQueryAdapter adapter;
+	private final MessageQueryService mqService;
 
-	@Autowired
-	public UserProviderApplication(MessageQueryAdapter adapter) {
-		this.adapter = adapter;
+	public UserProviderApplication(MessageQueryService mqService) {
+		this.mqService = mqService;
 	}
 
 	public static void main(String[] args) {
@@ -24,8 +21,6 @@ public class UserProviderApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		adapter.processRegisterMessage();
-		adapter.processAuthorizeMessage();
-		adapter.processLoginMessage();
+		mqService.startProcessing();
 	}
 }
