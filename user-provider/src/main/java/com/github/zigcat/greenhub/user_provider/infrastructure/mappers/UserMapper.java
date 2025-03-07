@@ -70,13 +70,13 @@ public class UserMapper {
 
     public static UserModel toModel(AppUser entity){
         return new UserModel(
-                user.getId(),
-                user.getFname(),
-                user.getLname(),
-                user.getEmail(),
-                user.getPassword(),
-                user.getRole(),
-                user.getRegDate()
+                entity.getId(),
+                entity.getFname(),
+                entity.getLname(),
+                entity.getEmail(),
+                entity.getPassword(),
+                entity.getRole(),
+                entity.getRegDate()
         );
     }
 }

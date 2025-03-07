@@ -6,6 +6,7 @@ import com.github.zigcat.greenhub.user_provider.domain.AppUser;
 import com.github.zigcat.greenhub.user_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.user_provider.domain.Scope;
 import com.github.zigcat.greenhub.user_provider.domain.interfaces.UserRepository;
+import com.github.zigcat.greenhub.user_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.user_provider.infrastructure.mappers.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,6 +67,8 @@ public class UserService {
 
     public Mono<AppUser> register(AppUser user){
         user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10)));
+        user.setRole(Role.USER);
+        user.setRegDate(LocalDateTime.now());
         return userRepository.save(UserMapper.toModel(user))
                             .flatMap(model -> {
                                 List<Scope> defaultScopes = Scope.defaultScopes(model.getId());

@@ -1,0 +1,81 @@
+package com.github.zigcat.greenhub.auth_provider.application.usecases;
+
+import com.github.zigcat.greenhub.auth_provider.application.exceptions.UnauthorizedAppException;
+import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
+import com.github.zigcat.greenhub.auth_provider.domain.interfaces.MessageQueryAdapter;
+import com.github.zigcat.greenhub.auth_provider.domain.interfaces.SecurityProvider;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.domain.JwtData;
+import com.github.zigcat.greenhub.auth_provider.application.events.AuthorizeEvent;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.JwtAuthInfrastructureException;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.mappers.UserMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+
+import java.util.Base64;
+import java.util.concurrent.CompletableFuture;
+
+@Service
+@Slf4j
+public class AuthService {
+    private final MessageQueryAdapter messageQueryAdapter;
+    private final SecurityProvider securityProvider;
+
+    public AuthService(MessageQueryAdapter messageQueryAdapter, SecurityProvider securityProvider) {
+        this.messageQueryAdapter = messageQueryAdapter;
+        this.securityProvider = securityProvider;
+    }
+
+    @EventListener
+    public void handleAuthorizeEvent(AuthorizeEvent event){
+        JwtRequest request = event.getJwtRequest();
+        CompletableFuture<InfrastructureDTO.UserAuth> replyFuture =
+                event.getReplyFuture();
+        processAuthorization(request)
+                .doOnNext(entity -> {
+                    replyFuture.complete(UserMapper.toAuthDTO(entity));
+                })
+                .doOnError(replyFuture::completeExceptionally)
+                .subscribe();
+    }
+
+    private Mono<AppUser> processAuthorization(JwtRequest request) throws JwtAuthInfrastructureException {
+        String token = request.getToken();
+        return Mono.fromRunnable(() -> securityProvider.validateAccessToken(token))
+                .then(Mono.fromCallable(() -> securityProvider.getAccessSubject(token)))
+                .flatMap(messageQueryAdapter::authorizeAndAwait);
+    }
+
+    public Mono<AppUser> register(AppUser user){
+        return messageQueryAdapter.registerAndAwait(user);
+    }
+
+    public Mono<JwtData> login(ServerHttpRequest request){
+        AppUser user = extractAuthData(request);
+        return messageQueryAdapter.loginAndAwait(user)
+                .map(res ->
+                        new JwtData(
+                                securityProvider.generateAccessToken(res),
+                                securityProvider.generateRefreshToken(res)
+                        )
+                );
+    }
+
+    private AppUser extractAuthData(ServerHttpRequest request){
+        log.info("Decoding Auth Data");
+        String authHeader = request.getHeaders().getFirst("Authorization");
+        if (authHeader != null && authHeader.startsWith("Basic ")) {
+            String base64Credentials = authHeader.substring(6);
+            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+            String[] parts = credentials.split(":", 2);
+            String username = parts[0];
+            String password = parts[1];
+            return new AppUser(username, password);
+        }
+        throw new UnauthorizedAppException("Unauthorized access");
+    }
+}
