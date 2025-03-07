@@ -5,7 +5,7 @@ import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
 import com.github.zigcat.greenhub.auth_provider.domain.interfaces.MessageQueryAdapter;
 import com.github.zigcat.greenhub.auth_provider.domain.interfaces.SecurityProvider;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.JwtRequest;
 import com.github.zigcat.greenhub.auth_provider.domain.JwtData;
 import com.github.zigcat.greenhub.auth_provider.application.events.AuthorizeEvent;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.JwtAuthInfrastructureException;

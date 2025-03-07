@@ -1,4 +1,4 @@
-package com.github.zigcat.greenhub.auth_provider.config;
+package com.github.zigcat.greenhub.auth_provider.exceptions;
 
 import lombok.Getter;
 

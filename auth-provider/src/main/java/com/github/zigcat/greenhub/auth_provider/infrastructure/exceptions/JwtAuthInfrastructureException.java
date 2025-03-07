@@ -1,9 +1,9 @@
 package com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions;
 
-import com.github.zigcat.greenhub.auth_provider.config.CoreException;
+import com.github.zigcat.greenhub.auth_provider.exceptions.ClientErrorException;
 
-public class JwtAuthInfrastructureException extends CoreException {
+public class JwtAuthInfrastructureException extends ClientErrorException {
     public JwtAuthInfrastructureException(String message) {
-        super(message, 400);
+        super(message, 403);
     }
 }

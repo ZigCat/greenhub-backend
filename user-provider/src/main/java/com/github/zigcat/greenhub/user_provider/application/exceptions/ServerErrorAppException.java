@@ -1,6 +1,6 @@
-package com.github.zigcat.greenhub.auth_provider.application.exceptions;
+package com.github.zigcat.greenhub.user_provider.application.exceptions;
 
-import com.github.zigcat.greenhub.auth_provider.exceptions.ServerErrorException;
+import com.github.zigcat.greenhub.user_provider.exceptions.ServerErrorException;
 
 public class ServerErrorAppException extends ServerErrorException {
     public ServerErrorAppException(String message) {

@@ -4,9 +4,15 @@ import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
 import com.github.zigcat.greenhub.auth_provider.domain.interfaces.MessageQueryAdapter;
 import com.github.zigcat.greenhub.auth_provider.application.events.AuthorizeEvent;
 import com.github.zigcat.greenhub.auth_provider.domain.MessageTemplate;
+import com.github.zigcat.greenhub.auth_provider.exceptions.ClientErrorException;
+import com.github.zigcat.greenhub.auth_provider.exceptions.CoreException;
+import com.github.zigcat.greenhub.auth_provider.exceptions.ServerErrorException;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.UserAuthResponse;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.JwtAuthInfrastructureException;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.ServerErrorInfrastructureException;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.ServiceUnavailableInfrastructureException;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.mappers.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -88,8 +94,8 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
             sendResponse(responseMessage, correlationId);
         }).exceptionally(e -> {
             int status;
-            if(e instanceof JwtAuthInfrastructureException){
-                status = 401;
+            if(e instanceof CoreException){
+                status = ((CoreException) e).getCode();
             } else {
                 status = 500;
             }
@@ -120,24 +126,37 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
         log.info("Sending and awaiting Kafka Record...");
         return registerSender.send(Mono.just(SenderRecord.create(request, correlationId)))
                 .doOnNext(result -> log.info("Message sent successfully with correlationId: {}", correlationId))
+                .onErrorResume(e -> {
+                    log.error("Error while sending Kafka message ", e);
+                    return Mono.error(new ServerErrorInfrastructureException("Unable to interact with user service"));
+                })
                 .then(userRegisterReceiver.receive()
                         .doOnNext(record -> log.info("Received record with key: {}", record.key()))
                         .filter(record -> {
                             if(record.key().equals(correlationId)){
                                 log.info("Correlated response captured");
-                                if(record.value().getStatus() == 200){
+                                int status = record.value().getStatus();
+                                if(status == 200){
                                     log.info("Status 200, reading...");
                                     return true;
-                                } else {
-                                    throw new ServerErrorInfrastructureException(record.value().getMessage());
+                                } else if(status / 100 == 4){
+                                    throw new ClientErrorException(record.value().getMessage(), status);
+                                } else if(status / 100 == 5){
+                                    throw new ServerErrorException(record.value().getMessage(), status);
                                 }
                             }
                             return false;
                         })
                         .map(record -> record.value().getPayload())
                         .timeout(Duration.ofSeconds(5))
-                        .next())
-                        .doOnError(e -> log.error("Error receiving Kafka response", e)
+                        .next()
+                        .onErrorResume(e -> {
+                            log.error("Error receiving Kafka response", e);
+                            if(e instanceof ServerErrorException){
+                                return Mono.error(new ServerErrorException(e.getMessage(), ((ServerErrorException) e).getCode()));
+                            }
+                            return Mono.error(new ServiceUnavailableInfrastructureException("User service unavailable"));
+                        })
                 );
     }
 
@@ -151,16 +170,23 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
         log.info("Sending and awaiting Kafka Record...");
         return authSender.send(Mono.just(SenderRecord.create(request, correlationId)))
                 .doOnNext(result -> log.info("Message sent successfully with correlationId: {}", correlationId))
+                .onErrorResume(e -> {
+                    log.error("Error while sending Kafka message ", e);
+                    return Mono.error(new ServerErrorInfrastructureException("Unable to interact with user service"));
+                })
                 .then(userAuthReceiver.receive()
                         .doOnNext(record -> log.info("Received record with key: {}", record.key()))
                         .filter(record -> {
                             if(record.key().equals(correlationId)){
                                 log.info("Correlated response captured");
-                                if(record.value().getStatus() == 200){
+                                int status = record.value().getStatus();
+                                if(status == 200){
                                     log.info("Status 200, reading...");
                                     return true;
-                                } else {
-                                    throw new ServerErrorInfrastructureException(record.value().getMessage());
+                                } else if(status / 100 == 4){
+                                    throw new ClientErrorException(record.value().getMessage(), status);
+                                } else if(status / 100 == 5){
+                                    throw new ServerErrorException(record.value().getMessage(), status);
                                 }
                             }
                             return false;
@@ -168,7 +194,13 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                         .map(record -> record.value().getPayload())
                         .timeout(Duration.ofSeconds(5))
                         .next()
-                        .doOnError(e -> log.error("Error receiving Kafka response", e))
+                        .onErrorResume(e -> {
+                            log.error("Error receiving Kafka response", e);
+                            if(e instanceof ServerErrorException){
+                                return Mono.error(new ServerErrorException(e.getMessage(), ((ServerErrorException) e).getCode()));
+                            }
+                            return Mono.error(new ServiceUnavailableInfrastructureException("User service unavailable"));
+                        })
                 );
     }
 
@@ -183,15 +215,22 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
         log.info("Sending and awaiting Kafka Record...");
         return loginSender.send(Mono.just(SenderRecord.create(request, correlationId)))
                 .doOnNext(result -> log.info("Message sent successfully with correlationId: {}", correlationId))
+                .onErrorResume(e -> {
+                    log.error("Error while sending Kafka message ", e);
+                    return Mono.error(new ServerErrorInfrastructureException("Unable to interact with user service"));
+                })
                 .then(userLoginReceiver.receive()
                         .filter(record -> {
                             if(record.key().equals(correlationId)){
                                 log.info("Correlated response captured");
-                                if(record.value().getStatus() == 200){
+                                int status = record.value().getStatus();
+                                if(status == 200){
                                     log.info("Status 200, reading...");
                                     return true;
-                                } else {
-                                    throw new ServerErrorInfrastructureException(record.value().getMessage());
+                                } else if(status / 100 == 4){
+                                    throw new ClientErrorException(record.value().getMessage(), status);
+                                } else if(status / 100 == 5){
+                                    throw new ServerErrorException(record.value().getMessage(), status);
                                 }
                             }
                             return false;
@@ -199,7 +238,13 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                         .map(record -> record.value().getPayload())
                         .timeout(Duration.ofSeconds(5))
                         .next()
-                        .doOnError(e -> log.error("Error receiving Kafka response", e))
+                        .onErrorResume(e -> {
+                            log.error("Error receiving Kafka response", e);
+                            if(e instanceof ServerErrorException){
+                                return Mono.error(new ServerErrorException(e.getMessage(), ((ServerErrorException) e).getCode()));
+                            }
+                            return Mono.error(new ServiceUnavailableInfrastructureException("User service unavailable"));
+                        })
             );
     }
 }

@@ -1,7 +1,7 @@
 package com.github.zigcat.greenhub.auth_provider.application.events;
 
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.JwtRequest;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

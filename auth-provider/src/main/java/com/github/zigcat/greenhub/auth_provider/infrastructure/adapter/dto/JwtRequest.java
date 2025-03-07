@@ -1,4 +1,4 @@
-package com.github.zigcat.greenhub.auth_provider.infrastructure.adapter;
+package com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto;
 
 import com.github.zigcat.greenhub.auth_provider.domain.schemas.TokenType;
 import lombok.AllArgsConstructor;

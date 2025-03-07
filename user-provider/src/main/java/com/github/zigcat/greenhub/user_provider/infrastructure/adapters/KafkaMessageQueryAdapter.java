@@ -8,6 +8,7 @@ import com.github.zigcat.greenhub.user_provider.domain.MessageTemplate;
 import com.github.zigcat.greenhub.user_provider.application.events.AuthorizeEvent;
 import com.github.zigcat.greenhub.user_provider.application.events.LoginEvent;
 import com.github.zigcat.greenhub.user_provider.application.events.RegisterEvent;
+import com.github.zigcat.greenhub.user_provider.exceptions.CoreException;
 import com.github.zigcat.greenhub.user_provider.infrastructure.InfrastructureDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -75,6 +76,16 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
         replyFuture.thenAccept(reply -> {
             MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(reply);
             sendRegisterResponse(responseMessage, correlationId);
+        }).exceptionally(e -> {
+            int status;
+            if(e instanceof CoreException){
+                status = ((CoreException) e).getCode();
+            } else {
+                status = 500;
+            }
+            MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(status, e.getMessage());
+            sendRegisterResponse(responseMessage, correlationId);
+            return null;
         });
     }
 
@@ -118,8 +129,8 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
             sendAuthorizeResponse(responseMessage, correlationId);
         }).exceptionally(e -> {
             int status;
-            if(e instanceof NotFoundAppException){
-                status = 404;
+            if(e instanceof CoreException){
+                status = ((CoreException) e).getCode();
             } else {
                 status = 500;
             }
@@ -166,10 +177,8 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
             sendLoginResponse(responseMessage, correlationId);
         }).exceptionally(e -> {
             int status;
-            if(e instanceof ForbiddenAppException){
-                status = 403;
-            } else if(e instanceof NotFoundAppException){
-                status = 404;
+            if(e instanceof CoreException){
+                status = ((CoreException) e).getCode();
             } else {
                 status = 500;
             }

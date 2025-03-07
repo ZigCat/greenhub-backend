@@ -1,6 +1,6 @@
 package com.github.zigcat.greenhub.auth_provider.presentation.controllers;
 
-import com.github.zigcat.greenhub.auth_provider.config.CoreException;
+import com.github.zigcat.greenhub.auth_provider.exceptions.CoreException;
 import com.github.zigcat.greenhub.auth_provider.presentation.PresentationDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

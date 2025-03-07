@@ -2,8 +2,8 @@ package com.github.zigcat.greenhub.auth_provider.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.JwtRequest;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.UserAuthResponse;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.JwtRequest;
+import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.UserAuthResponse;
 import com.github.zigcat.greenhub.auth_provider.domain.MessageTemplate;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.jackson.MessageTemplateDeserializer;
