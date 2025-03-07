@@ -7,9 +7,6 @@ import com.github.zigcat.greenhub.auth_provider.domain.MessageTemplate;
 import com.github.zigcat.greenhub.auth_provider.exceptions.ClientErrorException;
 import com.github.zigcat.greenhub.auth_provider.exceptions.CoreException;
 import com.github.zigcat.greenhub.auth_provider.exceptions.ServerErrorException;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.JwtRequest;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.UserAuthResponse;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.JwtAuthInfrastructureException;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.ServerErrorInfrastructureException;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.ServiceUnavailableInfrastructureException;
@@ -38,8 +35,8 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
     private final KafkaReceiver<String, MessageTemplate<AppUser>> userAuthReceiver;
     private final KafkaSender<String, MessageTemplate<InfrastructureDTO.UserLogin>> loginSender;
     private final KafkaReceiver<String, MessageTemplate<AppUser>> userLoginReceiver;
-    private final KafkaReceiver<String, MessageTemplate<JwtRequest>> jwtReceiver;
-    private final KafkaSender<String, MessageTemplate<UserAuthResponse>> userGatewaySender;
+    private final KafkaReceiver<String, MessageTemplate<InfrastructureDTO.JwtDTO>> jwtReceiver;
+    private final KafkaSender<String, MessageTemplate<InfrastructureDTO.UserAuth>> userGatewaySender;
 
     public KafkaMessageQueryAdapter(
             ApplicationEventPublisher applicationEventPublisher,
@@ -49,8 +46,9 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
             KafkaReceiver<String, MessageTemplate<AppUser>> userAuthReceiver,
             KafkaSender<String, MessageTemplate<InfrastructureDTO.UserLogin>> loginSender,
             KafkaReceiver<String, MessageTemplate<AppUser>> userLoginReceiver,
-            KafkaReceiver<String, MessageTemplate<JwtRequest>> jwtReceiver,
-            KafkaSender<String, MessageTemplate<UserAuthResponse>> userGatewaySender) {
+            KafkaReceiver<String, MessageTemplate<InfrastructureDTO.JwtDTO>> jwtReceiver,
+            KafkaSender<String, MessageTemplate<InfrastructureDTO.UserAuth>> userGatewaySender
+    ) {
         this.applicationEventPublisher = applicationEventPublisher;
         this.registerSender = registerSender;
         this.userRegisterReceiver = userRegisterReceiver;
@@ -72,25 +70,23 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                     batch.forEach(record -> {
                         String correlationId = record.key();
                         log.info("Received message with id {}", correlationId);
-                        JwtRequest requestData = record.value().getPayload();
-                        processRequest(requestData, correlationId);
+                        processRequest(record.value().getPayload(), correlationId);
                     });
                 })
                 .doOnError(e -> log.error("Error while receiving message", e))
                 .subscribe();
     }
 
-    private void processRequest(JwtRequest requestData, String correlationId) {
+    private void processRequest(InfrastructureDTO.JwtDTO dto, String correlationId) {
         CompletableFuture<InfrastructureDTO.UserAuth> replyFuture =
                 new CompletableFuture<>();
         AuthorizeEvent event =
-                new AuthorizeEvent(this, requestData, replyFuture);
+                new AuthorizeEvent(this, dto.token(), replyFuture);
         log.info("Preparing and publishing event for AuthService");
         applicationEventPublisher.publishEvent(event);
         replyFuture.thenAccept(reply -> {
             log.info("Reply accepted, preparing response");
-            UserAuthResponse response = UserMapper.toGatewayResponse(reply);
-            MessageTemplate<UserAuthResponse> responseMessage = new MessageTemplate<>(response);
+            MessageTemplate<InfrastructureDTO.UserAuth> responseMessage = new MessageTemplate<>(reply);
             sendResponse(responseMessage, correlationId);
         }).exceptionally(e -> {
             int status;
@@ -99,15 +95,15 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
             } else {
                 status = 500;
             }
-            MessageTemplate<UserAuthResponse> responseData = new MessageTemplate<>(status, e.getMessage());
+            MessageTemplate<InfrastructureDTO.UserAuth> responseData = new MessageTemplate<>(status, e.getMessage());
             sendResponse(responseData, correlationId);
             return null;
         });
     }
 
-    private void sendResponse(MessageTemplate<UserAuthResponse> responseMessage, String correlationId) {
+    private void sendResponse(MessageTemplate<InfrastructureDTO.UserAuth> responseMessage, String correlationId) {
         log.info("Sending response back");
-        ProducerRecord<String, MessageTemplate<UserAuthResponse>> response =
+        ProducerRecord<String, MessageTemplate<InfrastructureDTO.UserAuth>> response =
                 new ProducerRecord<>("auth-topic-reply", correlationId, responseMessage);
         userGatewaySender.send(Mono.just(SenderRecord.create(response, correlationId)))
                 .doOnNext(data -> log.info("Response sent successfully"))

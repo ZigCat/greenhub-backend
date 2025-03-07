@@ -5,7 +5,6 @@ import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
 import com.github.zigcat.greenhub.auth_provider.domain.interfaces.MessageQueryAdapter;
 import com.github.zigcat.greenhub.auth_provider.domain.interfaces.SecurityProvider;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.JwtRequest;
 import com.github.zigcat.greenhub.auth_provider.domain.JwtData;
 import com.github.zigcat.greenhub.auth_provider.application.events.AuthorizeEvent;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.exceptions.JwtAuthInfrastructureException;
@@ -32,10 +31,9 @@ public class AuthService {
 
     @EventListener
     public void handleAuthorizeEvent(AuthorizeEvent event){
-        JwtRequest request = event.getJwtRequest();
         CompletableFuture<InfrastructureDTO.UserAuth> replyFuture =
                 event.getReplyFuture();
-        processAuthorization(request)
+        processAuthorization(event.getToken())
                 .doOnNext(entity -> {
                     replyFuture.complete(UserMapper.toAuthDTO(entity));
                 })
@@ -43,8 +41,7 @@ public class AuthService {
                 .subscribe();
     }
 
-    private Mono<AppUser> processAuthorization(JwtRequest request) throws JwtAuthInfrastructureException {
-        String token = request.getToken();
+    private Mono<AppUser> processAuthorization(String token) throws JwtAuthInfrastructureException {
         return Mono.fromRunnable(() -> securityProvider.validateAccessToken(token))
                 .then(Mono.fromCallable(() -> securityProvider.getAccessSubject(token)))
                 .flatMap(messageQueryAdapter::authorizeAndAwait);

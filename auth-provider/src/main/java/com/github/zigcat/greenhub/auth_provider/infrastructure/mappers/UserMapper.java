@@ -2,7 +2,6 @@ package com.github.zigcat.greenhub.auth_provider.infrastructure.mappers;
 
 import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.UserAuthResponse;
 
 public class UserMapper {
     public static InfrastructureDTO.UserRegister toRegisterDTO(AppUser user){
@@ -27,15 +26,6 @@ public class UserMapper {
                 user.getEmail(),
                 user.getRole().toString(),
                 user.getScopes()
-        );
-    }
-
-    public static UserAuthResponse toGatewayResponse(InfrastructureDTO.UserAuth dto){
-        return new UserAuthResponse(
-                dto.id(),
-                dto.email(),
-                dto.role(),
-                dto.scopes()
         );
     }
 }

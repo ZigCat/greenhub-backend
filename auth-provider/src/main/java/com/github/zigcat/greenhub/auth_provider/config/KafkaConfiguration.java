@@ -2,8 +2,6 @@ package com.github.zigcat.greenhub.auth_provider.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.JwtRequest;
-import com.github.zigcat.greenhub.auth_provider.infrastructure.adapter.dto.UserAuthResponse;
 import com.github.zigcat.greenhub.auth_provider.domain.MessageTemplate;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.jackson.MessageTemplateDeserializer;
@@ -115,23 +113,23 @@ public class KafkaConfiguration {
     }
 
     @Bean
-    public KafkaReceiver<String, MessageTemplate<JwtRequest>> jwtReceiver(){
+    public KafkaReceiver<String, MessageTemplate<InfrastructureDTO.JwtDTO>> jwtReceiver(){
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "greenhub-auth");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, MessageTemplateDeserializer.class);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
-        props.put("value.deserializer.type", JwtRequest.class.getName());
+        props.put("value.deserializer.type", InfrastructureDTO.JwtDTO.class.getName());
         props.put("custom.object.mapper", objectMapper);
-        ReceiverOptions<String, MessageTemplate<JwtRequest>> receiverOptions =
+        ReceiverOptions<String, MessageTemplate<InfrastructureDTO.JwtDTO>> receiverOptions =
                 ReceiverOptions.create(props);
         receiverOptions = receiverOptions.subscription(Collections.singleton("auth-topic"));
         return KafkaReceiver.create(receiverOptions);
     }
 
     @Bean
-    public KafkaSender<String, MessageTemplate<UserAuthResponse>> userGatewaySender(){
+    public KafkaSender<String, MessageTemplate<InfrastructureDTO.UserAuth>> userGatewaySender(){
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);

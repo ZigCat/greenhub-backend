@@ -14,39 +14,39 @@ spring:
       enabled: false
   application:
     name: api-gateway
-  cloud:
-    gateway:
-      routes:
-        - id: auth-provider
-          uri: http://localhost:8081
-          predicates:
-            - Path=/auth/**
-          filters:
-            - AddRequestHeader=X-Request-Source, Gateway
-            - StripPrefix=1
-        - id: user-provider
-          uri: http://localhost:8082
-          predicates:
-            - Path=/user/**
-          filters:
-            - name: GatewayJwtFilter
-            - AddRequestHeader=X-Request-Source, Gateway
-            - StripPrefix=1
-        - id: platform-protected
-          uri: http://localhost:8083
-          predicates:
-            - Path=/platform/protected/**
-          filters:
-            - name: GatewayJwtFilter
-            - AddRequestHeader=X-Request-Source, Gateway
-            - StripPrefix=1
-        - id: platform-public
-          uri: http://localhost:8083
-          predicates:
-            - Path=/platform/public/**
-          filters:
-            - AddRequestHeader=X-Request-Source, Gateway
-            - StripPrefix=1
+#  cloud:
+#    gateway:
+#      routes:
+#        - id: auth-provider
+#          uri: http://localhost:8081
+#          predicates:
+#            - Path=/auth/**
+#          filters:
+#            - AddRequestHeader=X-Request-Source, Gateway
+#            - StripPrefix=1
+#        - id: user-provider
+#          uri: http://localhost:8082
+#          predicates:
+#            - Path=/user/**
+#          filters:
+#            - name: GatewayJwtFilter
+#            - AddRequestHeader=X-Request-Source, Gateway
+#            - StripPrefix=1
+#        - id: platform-protected
+#          uri: http://localhost:8083
+#          predicates:
+#            - Path=/platform/protected/**
+#          filters:
+#            - name: GatewayJwtFilter
+#            - AddRequestHeader=X-Request-Source, Gateway
+#            - StripPrefix=1
+#        - id: platform-public
+#          uri: http://localhost:8083
+#          predicates:
+#            - Path=/platform/public/**
+#          filters:
+#            - AddRequestHeader=X-Request-Source, Gateway
+#            - StripPrefix=1
 springdoc:
   enable-native-support: true
   api-docs:
