@@ -1,6 +1,27 @@
 databaseChangeLog:
   - changeSet:
-      id: 1
+      id: 001-enum-creation
+      author: ZigCat
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: "CREATE TYPE role_enum AS ENUM ('USER', 'AUTHOR', 'ADMIN');"
+        - sql:
+            dbms: postgresql
+            sql: "CREATE TYPE article_status_enum AS ENUM ('MODERATION', 'GRANTED', 'DENIED');"
+        - sql:
+            dbms: postgresql
+            sql: "CREATE TYPE paid_status_enum AS ENUM ('PAID', 'FREE');"
+        - sql:
+            dbms: postgresql
+            sql: "CREATE TYPE provider_enum AS ENUM ('STRIPE', 'PAYPAL');"
+        - sql:
+            dbms: postgresql
+            sql: "CREATE TYPE sub_status_enum AS ENUM ('ACTIVE', 'CANCELED', 'EXPIRED');"
+
+
+  - changeSet:
+      id: 002-tables-user-provider
       author: ZigCat
       changes:
         - createSequence:
@@ -17,42 +38,40 @@ databaseChangeLog:
                     primaryKey: true
               - column:
                   name: first_name
-                  type: varchar(50)
+                  type: varchar(255)
                   constraints:
                     nullable: false
               - column:
                   name: last_name
-                  type: varchar(50)
+                  type: varchar(255)
                   constraints:
                     nullable: false
               - column:
                   name: email
-                  type: varchar(50)
+                  type: varchar(255)
                   constraints:
+                    unique: true
                     nullable: false
               - column:
                   name: password
-                  type: varchar(150)
+                  type: varchar(255)
                   constraints:
                     nullable: false
               - column:
                   name: role
-                  type: varchar(10)
+                  type: role_enum
                   constraints:
                     nullable: false
               - column:
                   name: reg_date
                   type: timestamp
+                  defaultValue: NOW()
                   constraints:
                     nullable: false
         - addDefaultValue:
             columnName: user_id
             tableName: users
             defaultValueComputed: "nextval('user_sequence')"
-  - changeSet:
-      id: 2
-      author: ZigCat
-      changes:
         - createSequence:
             sequenceName: scope_sequence
             startValue: 1
@@ -72,7 +91,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: scopes
-                  type: varchar(100)
+                  type: varchar(255)
                   constraints:
                     nullable: false
         - addForeignKeyConstraint:
@@ -85,8 +104,9 @@ databaseChangeLog:
             columnName: scope_id
             tableName: user_scopes
             defaultValueComputed: "nextval('scope_sequence')"
+
   - changeSet:
-      id: 3
+      id: 003-tables-article-provider
       author: ZigCat
       changes:
         - createSequence:
@@ -103,8 +123,9 @@ databaseChangeLog:
                     primaryKey: true
               - column:
                   name: name
-                  type: varchar(50)
+                  type: varchar(255)
                   constraints:
+                    unique: true
                     nullable: false
         - addDefaultValue:
             columnName: category_id
@@ -124,22 +145,26 @@ databaseChangeLog:
                     primaryKey: true
               - column:
                   name: title
-                  type: varchar(200)
+                  type: varchar(255)
                   constraints:
+                    unique: true
                     nullable: false
               - column:
                   name: creation_date
                   type: timestamp
+                  defaultValue: NOW()
                   constraints:
                     nullable: false
               - column:
                   name: article_status
-                  type: varchar(50)
+                  type: article_status_enum
+                  defaultValue: 'MODERATION'
                   constraints:
                     nullable: false
               - column:
                   name: paid_status
-                  type: varchar(50)
+                  type: paid_status_enum
+                  defaultValue: 'FREE'
                   constraints:
                     nullable: false
               - column:
@@ -168,3 +193,278 @@ databaseChangeLog:
             columnName: article_id
             tableName: articles
             defaultValueComputed: "nextval('article_sequence')"
+
+
+  - changeSet:
+      id: 004-tables-payment-provider
+      author: ZigCat
+      changes:
+        - createSequence:
+            sequenceName: plan_sequence
+            startValue: 1
+            allocationSize: 1
+        - createTable:
+            tableName: subscription_plans
+            columns:
+              - column:
+                  name: plan_id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: DECIMAL(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stripe_price_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: paypal_plan_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+        - addDefaultValue:
+            columnName: plan_id
+            tableName: subscription_plans
+            defaultValueComputed: "nextval('plan_sequence')"
+        - createSequence:
+            sequenceName: sub_sequence
+            startValue: 1
+            allocationSize: 1
+        - createTable:
+            tableName: user_subscriptions
+            columns:
+              - column:
+                  name: sub_id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: plan_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider
+                  type: provider_enum
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider_subscription_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: sub_status_enum
+                  defaultValue: 'ACTIVE'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: timestamp
+                  defaultValue: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: timestamp
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: user_subscriptions
+            baseColumnNames: user_id
+            constraintName: fk_sub_user_id
+            referencedTableName: users
+            referencedColumnNames: user_id
+        - addForeignKeyConstraint:
+            baseTableName: user_subscriptions
+            baseColumnNames: plan_id
+            constraintName: fk_sub_plan_id
+            referencedTableName: subscription_plans
+            referencedColumnNames: plan_id
+        - addDefaultValue:
+            columnName: sub_id
+            tableName: user_subscriptions
+            defaultValueComputed: "nextval('sub_sequence')"
+
+
+  - changeSet:
+      id: 005-insert-users-admin
+      author: ZigCat
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: first_name
+                  value: "Solomon"
+              - column:
+                  name: last_name
+                  value: "Kazakpayev"
+              - column:
+                  name: email
+                  value: "zigcat517@gmail.com"
+              - column:
+                  name: password
+                  value: "$2a$10$hURUaKkVJ2.7OKmQn5HaJeuxav4Rgc8TLxnxisDutVb/obbZgeKQK"
+              - column:
+                  name: role
+                  value: "ADMIN"
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: first_name
+                  value: "Denis"
+              - column:
+                  name: last_name
+                  value: "Lenin"
+              - column:
+                  name: email
+                  value: "lenin.denis@mail.ru"
+              - column:
+                  name: password
+                  value: "$2a$10$4DbTpOUO0yGYWdI9JkWTiuM/vHRp5UTFPT.F5N5mQBBBlzIf6F8e."
+              - column:
+                  name: role
+                  value: "ADMIN"
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: first_name
+                  value: "Alexander"
+              - column:
+                  name: last_name
+                  value: "Kim"
+              - column:
+                  name: email
+                  value: "kim635107@gmail.com"
+              - column:
+                  name: password
+                  value: "$2a$10$OIT67dhc1we4inEenctzD.2fdzMyLYZWQzzOIf8rRQ.MgvrHkDB6q"
+              - column:
+                  name: role
+                  value: "ADMIN"
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'zigcat517@gmail.com')"
+              - column:
+                  name: scopes
+                  value: 'user.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'zigcat517@gmail.com')"
+              - column:
+                  name: scopes
+                  value: 'article.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'zigcat517@gmail.com')"
+              - column:
+                  name: scopes
+                  value: 'payment.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'lenin.denis@mail.ru')"
+              - column:
+                  name: scopes
+                  value: 'user.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'lenin.denis@mail.ru')"
+              - column:
+                  name: scopes
+                  value: 'article.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'lenin.denis@mail.ru')"
+              - column:
+                  name: scopes
+                  value: 'payment.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'kim635107@gmail.com')"
+              - column:
+                  name: scopes
+                  value: 'user.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'kim635107@gmail.com')"
+              - column:
+                  name: scopes
+                  value: 'article.manage'
+        - insert:
+            tableName: user_scopes
+            columns:
+              - column:
+                  name: user_id
+                  valueComputed: "(SELECT user_id FROM users WHERE email = 'kim635107@gmail.com')"
+              - column:
+                  name: scopes
+                  value: 'payment.manage'
+  - changeSet:
+      id: 006-insert-plan-default
+      author: ZigCat
+      changes:
+        - insert:
+            tableName: subscription_plans
+            columns:
+              - column:
+                  name: name
+                  value: "Standard"
+              - column:
+                  name: price
+                  value: 3.99
+              - column:
+                  name: currency
+                  value: "USD"
+              - column:
+                  name: stripe_price_id
+                  value: "price_1R1IgpJj45PeAB3ZfUYp01Zt"
+              - column:
+                  name: paypal_plan_id
+                  value: "P-5J657680J2084724DM7H22TA"

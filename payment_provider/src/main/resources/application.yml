@@ -1,0 +1,24 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: payment_provider
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_DB_HOST}/greenhub
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+stripe:
+  key:
+    public: ${STRIPE_PUBLIC}
+    secret: ${STRIPE_SECRET}
+paypal:
+  url: https://api-m.sandbox.paypal.com
+  key:
+    client: ${PAYPAL_CLIENT}
+    secret: ${PAYPAL_SECRET}
