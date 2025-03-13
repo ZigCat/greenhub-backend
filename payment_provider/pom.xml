@@ -9,8 +9,8 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.github.zigcat.greenhub</groupId>
-	<artifactId>payment_provider</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>payment-provider</artifactId>
+	<version>0.0.1</version>
 	<name>payment_provider</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>

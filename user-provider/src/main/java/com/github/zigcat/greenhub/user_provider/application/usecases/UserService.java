@@ -114,7 +114,7 @@ public class UserService {
     public Mono<AppUser> register(AppUser user){
         user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10)));
         user.setRole(Role.USER);
-        user.setRegDate(LocalDateTime.now());
+        log.info(UserMapper.toModel(user).toString());
         return userRepository.save(UserMapper.toModel(user))
             .flatMap(model -> {
                 List<Scope> defaultScopes = Scope.defaultScopes(model.getId());

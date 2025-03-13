@@ -45,8 +45,8 @@ public class R2dbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
-    public Mono<SubscriptionModel> findByUserId(Long userId) {
-        return repository.findByUserId(userId)
+    public Flux<SubscriptionModel> findByUserId(Long userId) {
+        return repository.findAllByUserId(userId)
                 .onErrorMap(e -> {
                     log.error(e.getMessage());
                     if(e instanceof EmptyResultDataAccessException){

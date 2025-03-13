@@ -12,6 +12,7 @@ import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleContentModel;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleModel;
 import com.github.zigcat.greenhub.article_provider.utils.ArticleUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 
 @Service
+@Slf4j
 public class ArticleService {
     private final ArticleRepository repository;
     private final ArticleContentRepository contentRepository;
@@ -54,18 +56,17 @@ public class ArticleService {
             Long creatorId
     ){
         AuthorizationData auth = permissions.extractAuthData(request);
-        ArticleStatus status;
-        if(!permissions.isAdmin(auth)){
-            status = ArticleStatus.GRANTED;
-        } else {
+        ArticleStatus status = ArticleStatus.GRANTED;
+        if(permissions.isAdmin(auth)){
             try{
                status = ArticleStatus.valueOf(articleStatus);
             } catch (IllegalArgumentException e){
                 throw new BadRequestAppException("Wrong param");
             }
         }
+        log.info(status.getValue());
         return repository
-                .findAllByStatus(status)
+                .findAllByStatus(status.getValue())
                 .filter(model -> {
                     if(creatorId == null) return true;
                     return model.getCreator().equals(creatorId);

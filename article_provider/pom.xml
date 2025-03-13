@@ -9,8 +9,8 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.github.zigcat.greenhub</groupId>
-	<artifactId>article_provider</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>article-provider</artifactId>
+	<version>0.0.1</version>
 	<name>article_provider</name>
 	<description>Microservice for Article</description>
 	<url/>
@@ -69,6 +69,10 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>

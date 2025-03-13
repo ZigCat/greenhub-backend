@@ -7,7 +7,7 @@ import reactor.core.publisher.Mono;
 public interface SubscriptionRepository {
     Flux<SubscriptionModel> findAll();
     Mono<SubscriptionModel> findById(Long id);
-    Mono<SubscriptionModel> findByUserId(Long userId);
+    Flux<SubscriptionModel> findByUserId(Long userId);
     Mono<SubscriptionModel> save(SubscriptionModel model);
     Mono<Void> delete(Long id);
 }

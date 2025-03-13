@@ -1,5 +1,6 @@
 server:
   port: 8080
+  address: 0.0.0.0
 eureka:
   client:
     service-url:
@@ -9,44 +10,13 @@ eureka:
 spring:
   kafka:
     bootstrap-servers: 172.18.173.155:9092
-  security:
-    csrf:
-      enabled: false
   application:
     name: api-gateway
-#  cloud:
-#    gateway:
-#      routes:
-#        - id: auth-provider
-#          uri: http://localhost:8081
-#          predicates:
-#            - Path=/auth/**
-#          filters:
-#            - AddRequestHeader=X-Request-Source, Gateway
-#            - StripPrefix=1
-#        - id: user-provider
-#          uri: http://localhost:8082
-#          predicates:
-#            - Path=/user/**
-#          filters:
-#            - name: GatewayJwtFilter
-#            - AddRequestHeader=X-Request-Source, Gateway
-#            - StripPrefix=1
-#        - id: platform-protected
-#          uri: http://localhost:8083
-#          predicates:
-#            - Path=/platform/protected/**
-#          filters:
-#            - name: GatewayJwtFilter
-#            - AddRequestHeader=X-Request-Source, Gateway
-#            - StripPrefix=1
-#        - id: platform-public
-#          uri: http://localhost:8083
-#          predicates:
-#            - Path=/platform/public/**
-#          filters:
-#            - AddRequestHeader=X-Request-Source, Gateway
-#            - StripPrefix=1
+greenhub:
+  gateway:
+    auth: http://localhost:8081
+    user: http://localhost:8082
+    main: http://localhost:8083
 springdoc:
   enable-native-support: true
   api-docs:
@@ -67,3 +37,11 @@ openapi:
     title: api-gateway
     version: 1.0.0
     url: http://localhost:8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: "always"

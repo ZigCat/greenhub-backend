@@ -25,3 +25,11 @@ eureka:
   client:
     fetch-registry: false
     register-with-eureka: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+  endpoint:
+    health:
+      show-details: "always"

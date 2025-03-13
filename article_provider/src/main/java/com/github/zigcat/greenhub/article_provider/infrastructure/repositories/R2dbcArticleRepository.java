@@ -30,8 +30,8 @@ public class R2dbcArticleRepository implements ArticleRepository {
     }
 
     @Override
-    public Flux<ArticleModel> findAllByStatus(ArticleStatus articleStatus) {
-        return repository.findAllByArticleStatus(articleStatus)
+    public Flux<ArticleModel> findAllByStatus(String articleStatus) {
+        return repository.findAllByStatus(articleStatus)
                 .onErrorMap(e -> {
                     if(e instanceof IllegalArgumentException){
                         throw new BadRequestInfrastructureException(e.getMessage());

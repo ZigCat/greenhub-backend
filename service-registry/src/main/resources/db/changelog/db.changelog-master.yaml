@@ -2,24 +2,6 @@ databaseChangeLog:
   - changeSet:
       id: 001-enum-creation
       author: ZigCat
-      changes:
-        - sql:
-            dbms: postgresql
-            sql: "CREATE TYPE role_enum AS ENUM ('USER', 'AUTHOR', 'ADMIN');"
-        - sql:
-            dbms: postgresql
-            sql: "CREATE TYPE article_status_enum AS ENUM ('MODERATION', 'GRANTED', 'DENIED');"
-        - sql:
-            dbms: postgresql
-            sql: "CREATE TYPE paid_status_enum AS ENUM ('PAID', 'FREE');"
-        - sql:
-            dbms: postgresql
-            sql: "CREATE TYPE provider_enum AS ENUM ('STRIPE', 'PAYPAL');"
-        - sql:
-            dbms: postgresql
-            sql: "CREATE TYPE sub_status_enum AS ENUM ('ACTIVE', 'CANCELED', 'EXPIRED');"
-
-
   - changeSet:
       id: 002-tables-user-provider
       author: ZigCat
@@ -59,7 +41,8 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: role
-                  type: role_enum
+                  type: varchar(100)
+                  defaultValue: 'USER'
                   constraints:
                     nullable: false
               - column:
@@ -157,13 +140,13 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: article_status
-                  type: article_status_enum
+                  type: varchar(100)
                   defaultValue: 'MODERATION'
                   constraints:
                     nullable: false
               - column:
                   name: paid_status
-                  type: paid_status_enum
+                  type: varchar(100)
                   defaultValue: 'FREE'
                   constraints:
                     nullable: false
@@ -264,7 +247,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: provider
-                  type: provider_enum
+                  type: varchar(100)
                   constraints:
                     nullable: false
               - column:
@@ -274,7 +257,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: status
-                  type: sub_status_enum
+                  type: varchar(100)
                   defaultValue: 'ACTIVE'
                   constraints:
                     nullable: false
@@ -325,7 +308,7 @@ databaseChangeLog:
                   value: "zigcat517@gmail.com"
               - column:
                   name: password
-                  value: "$2a$10$hURUaKkVJ2.7OKmQn5HaJeuxav4Rgc8TLxnxisDutVb/obbZgeKQK"
+                  value: "$2a$10$1YsO9Zr96Ko0Xwh7CA0NtuI9Ig9wl8SCD4AmfckGOQ1XIMelXDmMa"
               - column:
                   name: role
                   value: "ADMIN"
