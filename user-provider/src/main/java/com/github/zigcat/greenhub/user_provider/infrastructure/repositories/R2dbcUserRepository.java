@@ -13,7 +13,6 @@ import com.github.zigcat.greenhub.user_provider.infrastructure.models.UserModel;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;

@@ -38,7 +38,7 @@ public class JwtProvider implements SecurityProvider {
         return Jwts.builder()
                 .setSubject(user.getEmail())
                 .setExpiration(accessExpiration)
-                .signWith(jwtAccessSecret)
+                .signWith(jwtAccessSecret, SignatureAlgorithm.HS256)
                 .claim("id", user.getId())
                 .compact();
     }
@@ -50,7 +50,8 @@ public class JwtProvider implements SecurityProvider {
         return Jwts.builder()
                 .setSubject(user.getEmail())
                 .setExpiration(refreshExpiration)
-                .signWith(jwtRefreshSecret)
+                .signWith(jwtRefreshSecret, SignatureAlgorithm.HS256)
+                .claim("id", user.getId())
                 .compact();
     }
 
@@ -67,6 +68,13 @@ public class JwtProvider implements SecurityProvider {
     @Override
     public String getAccessSubject(String token){
         return getSubject(token, jwtAccessSecret);
+    }
+
+    @Override
+    public AppUser getRefreshClaims(String token) {
+        Claims claims = getClaims(token, jwtRefreshSecret);
+        Long userId = ((Number) claims.get("id")).longValue();
+        return new AppUser(userId, claims.getSubject());
     }
 
     private Claims getClaims(String token, SecretKey key){

@@ -31,9 +31,13 @@ public class GatewayRoutesConfiguration {
                                 .stripPrefix(1))
                         .uri(AUTH_URL))
 
-                .route("user-provider", r -> r.path("/user/**")
+                .route("user-protected", r -> r.path("/user/protected/**")
                         .filters(f -> f.filter(jwtFilter.apply(new GatewayJwtFilter.Config()))
                                 .addRequestHeader("X-Request-Source", "Gateway")
+                                .stripPrefix(1))
+                        .uri(USER_URL))
+                .route("user-public", r -> r.path("/user/public/**")
+                        .filters(f -> f.addRequestHeader("X-Request-Source", "Gateway")
                                 .stripPrefix(1))
                         .uri(USER_URL))
 

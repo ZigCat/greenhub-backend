@@ -8,4 +8,5 @@ public interface SecurityProvider {
     boolean validateAccessToken(String token);
     boolean validateRefreshToken(String token);
     String getAccessSubject(String token);
+    AppUser getRefreshClaims(String token);
 }

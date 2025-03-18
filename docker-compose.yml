@@ -45,12 +45,6 @@ services:
       - mongo_data:/data/db
     networks:
       - backend
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
-    command: ["mongod", "--wiredTigerCacheSizeGB", "0.3"]
 
   redis:
     image: redis:latest
@@ -65,12 +59,6 @@ services:
       - "6379:6379"
     networks:
       - backend
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.25"
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0

@@ -33,7 +33,7 @@ public class AuthController {
     }
 
     @Operation(
-            summary = "New user registering",
+            summary = "REGISTRATION",
             description = "Creates new user based on data that provided in request body",
             tags = {"Auth"},
             responses = {
@@ -43,7 +43,16 @@ public class AuthController {
                                     schema = @Schema(implementation = AppUser.class)
                             )
                     ),
-                    @ApiResponse(responseCode = "500", description = "Internal server error")
+                    @ApiResponse(responseCode = "500", description = "Internal server error",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                            )),
+                    @ApiResponse(responseCode = "503", description = "User service/source unavailable",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                            ))
             },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "New user's data",
@@ -63,7 +72,7 @@ public class AuthController {
     }
 
     @Operation(
-            summary = "Login into service",
+            summary = "LOGIN",
             description = "Getting access and refresh tokens by providing user credentials",
             tags = {"Auth"},
             responses = {
@@ -73,8 +82,21 @@ public class AuthController {
                                     schema = @Schema(implementation = JwtData.class)
                             )
                     ),
-                    @ApiResponse(responseCode = "400", description = "Missing required data"),
-                    @ApiResponse(responseCode = "500", description = "Internal server error")
+                    @ApiResponse(responseCode = "400", description = "Missing required data",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                            )),
+                    @ApiResponse(responseCode = "500", description = "Internal server error",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                            )),
+                    @ApiResponse(responseCode = "503", description = "User service/source unavailable",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                            ))
             },
             security = @SecurityRequirement(name = "basicAuth")
     )
@@ -83,6 +105,37 @@ public class AuthController {
             ServerHttpRequest request
     ){
         return service.login(request)
+                .map(ResponseEntity::ok);
+    }
+
+    @Operation(
+            summary = "REFRESH",
+            description = "Updating tokens by providing unexpired refresh token",
+            tags = {"Auth"},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Success",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = JwtData.class)
+                            )
+                    ),
+                    @ApiResponse(responseCode = "400", description = "Missing required data",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                            )),
+                    @ApiResponse(responseCode = "500", description = "Internal server error",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                            ))
+            }
+    )
+    @PostMapping("/refresh")
+    public Mono<ResponseEntity<JwtData>> refresh(
+            @RequestBody PresentationDTO.JwtToken dto
+            ){
+        return service.refresh(UserUtils.toEntity(dto))
                 .map(ResponseEntity::ok);
     }
 }

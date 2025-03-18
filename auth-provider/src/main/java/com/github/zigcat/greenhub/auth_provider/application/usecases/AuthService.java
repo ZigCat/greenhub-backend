@@ -1,9 +1,12 @@
 package com.github.zigcat.greenhub.auth_provider.application.usecases;
 
+import com.github.zigcat.greenhub.auth_provider.application.exceptions.BadRequestAppException;
 import com.github.zigcat.greenhub.auth_provider.application.exceptions.UnauthorizedAppException;
 import com.github.zigcat.greenhub.auth_provider.domain.AppUser;
+import com.github.zigcat.greenhub.auth_provider.domain.JwtToken;
 import com.github.zigcat.greenhub.auth_provider.domain.interfaces.MessageQueryAdapter;
 import com.github.zigcat.greenhub.auth_provider.domain.interfaces.SecurityProvider;
+import com.github.zigcat.greenhub.auth_provider.domain.schemas.TokenType;
 import com.github.zigcat.greenhub.auth_provider.infrastructure.InfrastructureDTO;
 import com.github.zigcat.greenhub.auth_provider.domain.JwtData;
 import com.github.zigcat.greenhub.auth_provider.application.events.AuthorizeEvent;
@@ -14,6 +17,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
@@ -60,6 +64,24 @@ public class AuthService {
                                 securityProvider.generateRefreshToken(res)
                         )
                 );
+    }
+
+    public Mono<JwtData> refresh(JwtToken data){
+        if(data == null
+                || data.getToken() == null
+                || data.getTokenType() != TokenType.REFRESH)
+            return Mono.error(new BadRequestAppException("Missing or invalid token"));
+        String token = data.getToken();
+        return Mono.fromCallable(() -> {
+                    securityProvider.validateRefreshToken(token);
+                    return securityProvider.getRefreshClaims(token);
+                })
+                .onErrorResume(e -> Mono.error(new UnauthorizedAppException(e.getMessage())))
+                .subscribeOn(Schedulers.boundedElastic())
+                .map(user -> new JwtData(
+                        securityProvider.generateAccessToken(user),
+                        securityProvider.generateRefreshToken(user)
+                ));
     }
 
     private AppUser extractAuthData(ServerHttpRequest request){

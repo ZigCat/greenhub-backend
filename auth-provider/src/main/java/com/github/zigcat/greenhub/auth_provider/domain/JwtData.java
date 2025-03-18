@@ -8,11 +8,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema
+@Schema(description = "JWT token response presentation")
 public class JwtData {
     @Schema
     private String access;
-
     @Schema
     private String refresh;
 }
