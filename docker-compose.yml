@@ -20,6 +20,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   mongo:
     image: mongo:6
@@ -40,6 +45,12 @@ services:
       - mongo_data:/data/db
     networks:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.3"]
 
   redis:
     image: redis:latest
@@ -54,6 +65,12 @@ services:
       - "6379:6379"
     networks:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -66,10 +83,16 @@ services:
       retries: 5
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m"
     ports:
       - "2181:2181"
     networks:
       - backend
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -80,7 +103,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 30s
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -107,7 +130,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -130,7 +153,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 30s
     depends_on:
       kafka:
         condition: service_healthy
@@ -142,9 +165,6 @@ services:
       GREENHUB_GATEWAY_AUTH: http://auth-provider:8081
       GREENHUB_GATEWAY_USER: http://user-provider:8082
       GREENHUB_GATEWAY_MAIN: http://article-provider:8083
-      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CLOUD_GATEWAY: DEBUG
-      LOGGING_LEVEL_REACTOR_NETTY_HTTP_CLIENT: DEBUG
-      LOGGING_LEVEL_REACTOR_NETTY_HTTP_SERVER: DEBUG
     ports:
       - "8080:8080"
     networks:
@@ -160,7 +180,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 30s
     depends_on:
       kafka:
         condition: service_healthy
@@ -190,7 +210,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 30s
     depends_on:
       kafka:
         condition: service_healthy
@@ -225,7 +245,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 30s
     depends_on:
       mongo:
         condition: service_healthy

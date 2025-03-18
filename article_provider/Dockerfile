@@ -1,13 +1,15 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS builder
 WORKDIR /app
-COPY . .
+COPY pom.xml ./
+RUN mvn dependency:go-offline
+
+COPY src/ src/
 RUN mvn clean package -DskipTests
 
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-RUN apt-get update
-RUN apt update && apt install -y curl
+RUN apk add --no-cache curl
 
 COPY --from=builder /app/target/article-provider-0.0.1.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
