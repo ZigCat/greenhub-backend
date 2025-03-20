@@ -41,18 +41,32 @@ public class UserController {
                                     schema = @Schema(implementation = AppUser.class)
                             )
                     ),
-                    @ApiResponse(responseCode = "403", description = "Access Denied",
+                    @ApiResponse(responseCode = "400", description = "Bad request",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":400,\n\"message\":\"Wrong param\"}")
+                            )
+                    ),
+                    @ApiResponse(responseCode = "403", description = "Forbidden request",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
                                     examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Not enough rights for this action\"}")
                             )
                     ),
-                    @ApiResponse(responseCode = "500", description = "Internal server Error",
+                    @ApiResponse(responseCode = "404", description = "Not found",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
-                                    examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server Error\"}")
+                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"User not found\"}")
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server error\"}")
                             ))
             },
             parameters = {
@@ -85,18 +99,25 @@ public class UserController {
                     @ApiResponse(responseCode = "204", description = "Success",
                             content = @Content()
                     ),
-                    @ApiResponse(responseCode = "403", description = "Access Denied",
+                    @ApiResponse(responseCode = "403", description = "Forbidden request",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
                                     examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Not enough rights for this action\"}")
                             )
                     ),
-                    @ApiResponse(responseCode = "500", description = "Internal server Error",
+                    @ApiResponse(responseCode = "409", description = "Conflict",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
-                                    examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server Error\"}")
+                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Data conflict occurred while trying to transact\"}")
+                            )
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Internal server error",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server error\"}")
                             ))
             },
             parameters = {

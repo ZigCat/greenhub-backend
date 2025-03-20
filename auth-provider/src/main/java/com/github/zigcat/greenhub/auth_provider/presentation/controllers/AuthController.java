@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @Slf4j
-@Tag(name = "Auth", description = "Authorization processes related controller")
+@Tag(name = "Auth", description = "Authorization controller")
 public class AuthController {
     private final AuthService service;
 
@@ -38,7 +38,7 @@ public class AuthController {
             description = "Creates new user based on data that provided in request body",
             tags = {"Auth"},
             responses = {
-                    @ApiResponse(responseCode = "201", description = "User successfully created",
+                    @ApiResponse(responseCode = "201", description = "Created",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = AppUser.class)
@@ -70,7 +70,7 @@ public class AuthController {
                             ))
             },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New user's data",
+                    description = "Registration DTO",
                     required = true,
                     content = @Content(
                             mediaType = "application/json",
@@ -97,19 +97,19 @@ public class AuthController {
                                     schema = @Schema(implementation = JwtData.class)
                             )
                     ),
-                    @ApiResponse(responseCode = "400", description = "Missing required data",
+                    @ApiResponse(responseCode = "400", description = "Bad request",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
                                     examples = @ExampleObject(value = "{\"code\":400,\n\"message\":\"Missing data\"}")
                             )),
-                    @ApiResponse(responseCode = "403", description = "Access denied",
+                    @ApiResponse(responseCode = "403", description = "Forbidden request",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
                                     examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Wrong password\"}")
                             )),
-                    @ApiResponse(responseCode = "404", description = "User not found",
+                    @ApiResponse(responseCode = "404", description = "Not found",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
@@ -149,7 +149,7 @@ public class AuthController {
                                     schema = @Schema(implementation = JwtData.class)
                             )
                     ),
-                    @ApiResponse(responseCode = "400", description = "Missing required data",
+                    @ApiResponse(responseCode = "400", description = "Bad request",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
@@ -161,7 +161,14 @@ public class AuthController {
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
                                     examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server error\"}")
                             ))
-            }
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Registration DTO",
+            required = true,
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = PresentationDTO.JwtToken.class)
+            ))
     )
     @PostMapping("/refresh")
     public Mono<ResponseEntity<JwtData>> refresh(

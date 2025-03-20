@@ -41,7 +41,7 @@ public class ScopeController {
                                     schema = @Schema(implementation = Scope.class)
                             )
                     ),
-                    @ApiResponse(responseCode = "403", description = "Access Denied",
+                    @ApiResponse(responseCode = "403", description = "Forbidden request",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),

@@ -52,10 +52,12 @@ public class GatewayRoutesConfiguration {
                                 .addRequestHeader("X-Request-Source", "Gateway")
                                 .stripPrefix(1))
                         .uri(MAIN_URL))
-
                 .route("platform-public", r -> r.path("/platform/public/**")
                         .filters(f -> f.addRequestHeader("X-Request-Source", "Gateway")
                                 .stripPrefix(1))
+                        .uri(MAIN_URL))
+                .route("platform-docs", r -> r.path("/platform/v3/api-docs")
+                        .filters(f -> f.stripPrefix(1))
                         .uri(MAIN_URL))
 
                 .build();

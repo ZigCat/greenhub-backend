@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.article_provider.domain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,11 +8,17 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "Interaction domain model")
 public class Interaction {
+    @Schema(example = "1")
     private Long articleId;
+    @Schema(example = "1")
     private Long userId;
+    @Schema(example = "2")
     private Integer likes;
+    @Schema(example = "10")
     private Integer views;
+    @Schema(example = "5.0")
     private Double rating;
 
     public Interaction(Long articleId) {

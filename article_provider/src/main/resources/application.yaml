@@ -32,11 +32,12 @@ openapi:
   service:
     title: article-provider
     version: 1.0.0
-    url: http://localhost:8083
+    url: http://localhost:8080/platform
 springdoc:
   api-docs:
     enabled: true
     path: /v3/api-docs
   swagger-ui:
+    operationsSorter: method
     enabled: true
     path: /swagger-ui.html

@@ -43,7 +43,7 @@ public class UserPublicController {
                                     )
                             )
                     ),
-                    @ApiResponse(responseCode = "404", description = "Not Found",
+                    @ApiResponse(responseCode = "404", description = "Not found",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),

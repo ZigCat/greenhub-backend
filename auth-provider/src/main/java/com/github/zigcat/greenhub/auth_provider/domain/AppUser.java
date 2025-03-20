@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(description = "User response presentation")
+@Schema(description = "User domain model")
 public class AppUser {
     @Schema(example = "1")
     private Long id;

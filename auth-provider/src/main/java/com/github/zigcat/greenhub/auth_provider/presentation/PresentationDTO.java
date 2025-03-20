@@ -3,7 +3,7 @@ package com.github.zigcat.greenhub.auth_provider.presentation;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public class PresentationDTO {
-    @Schema(description = "Registration endpoint DTO")
+    @Schema(description = "Registration data transfer object")
     public record UserRegister(
             @Schema(example = "John")
             String fname,
@@ -23,7 +23,7 @@ public class PresentationDTO {
             int statusCode
     ){}
 
-    @Schema(description = "JWT token related endpoint DTO")
+    @Schema(description = "JWT data transfer object")
     public record JwtToken(
             @Schema
             String token,

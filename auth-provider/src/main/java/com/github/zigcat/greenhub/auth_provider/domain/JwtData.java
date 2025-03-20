@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(description = "JWT token response presentation")
+@Schema(description = "JWT Response domain model")
 public class JwtData {
     @Schema
     private String access;
