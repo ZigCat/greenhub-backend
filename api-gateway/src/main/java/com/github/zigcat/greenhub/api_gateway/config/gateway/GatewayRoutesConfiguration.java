@@ -30,6 +30,9 @@ public class GatewayRoutesConfiguration {
                         .filters(f -> f.addRequestHeader("X-Request-Source", "Gateway")
                                 .stripPrefix(1))
                         .uri(AUTH_URL))
+                .route("auth-docs", r -> r.path("/auth/v3/api-docs")
+                        .filters(f -> f.stripPrefix(1))
+                        .uri(AUTH_URL))
 
                 .route("user-protected", r -> r.path("/user/protected/**")
                         .filters(f -> f.filter(jwtFilter.apply(new GatewayJwtFilter.Config()))
@@ -39,6 +42,9 @@ public class GatewayRoutesConfiguration {
                 .route("user-public", r -> r.path("/user/public/**")
                         .filters(f -> f.addRequestHeader("X-Request-Source", "Gateway")
                                 .stripPrefix(1))
+                        .uri(USER_URL))
+                .route("user-docs", r -> r.path("/user/v3/api-docs")
+                        .filters(f -> f.stripPrefix(1))
                         .uri(USER_URL))
 
                 .route("platform-protected", r -> r.path("/platform/protected/**")

@@ -7,6 +7,7 @@ import com.github.zigcat.greenhub.auth_provider.presentation.PresentationDTO;
 import com.github.zigcat.greenhub.auth_provider.presentation.utils.UserUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -43,15 +44,29 @@ public class AuthController {
                                     schema = @Schema(implementation = AppUser.class)
                             )
                     ),
+                    @ApiResponse(responseCode = "400", description = "Bad request",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":400,\n\"message\":\"Invalid email address\"}")
+                            )),
+                    @ApiResponse(responseCode = "409", description = "Conflict",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":409,\n\"message\":\"User with this email already exists\"}")
+                            )),
                     @ApiResponse(responseCode = "500", description = "Internal server error",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server error\"}")
                             )),
                     @ApiResponse(responseCode = "503", description = "User service/source unavailable",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":503,\n\"message\":\"User service unavailable\"}")
                             ))
             },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -85,17 +100,32 @@ public class AuthController {
                     @ApiResponse(responseCode = "400", description = "Missing required data",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":400,\n\"message\":\"Missing data\"}")
+                            )),
+                    @ApiResponse(responseCode = "403", description = "Access denied",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Wrong password\"}")
+                            )),
+                    @ApiResponse(responseCode = "404", description = "User not found",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":404,\n\"message\":\"User with this email not found\"}")
                             )),
                     @ApiResponse(responseCode = "500", description = "Internal server error",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server error\"}")
                             )),
                     @ApiResponse(responseCode = "503", description = "User service/source unavailable",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":503,\n\"message\":\"User service unavailable\"}")
                             ))
             },
             security = @SecurityRequirement(name = "basicAuth")
@@ -122,12 +152,14 @@ public class AuthController {
                     @ApiResponse(responseCode = "400", description = "Missing required data",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":400,\n\"message\":\"Missing data\"}")
                             )),
                     @ApiResponse(responseCode = "500", description = "Internal server error",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = PresentationDTO.ApiError.class)
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":500,\n\"message\":\"Internal server error\"}")
                             ))
             }
     )

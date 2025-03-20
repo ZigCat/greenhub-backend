@@ -33,13 +33,11 @@ public class AuthService {
         CompletableFuture<AppUser> replyFuture = event.getReplyFuture();
         log.info("Making database call...");
         service.register(user)
-                .doOnNext(entity -> {
-                    log.info("Sending data to event publisher...");
-                    replyFuture.complete(entity);
-                })
-                .doOnError(e -> {
-                    log.error("Error while processing event ", e);
+                .doOnSuccess(replyFuture::complete)
+                .doOnError(e -> log.error("Error while processing event {}", e.getMessage()))
+                .onErrorResume(e -> {
                     replyFuture.completeExceptionally(e);
+                    return Mono.empty();
                 })
                 .subscribe();
     }
@@ -49,16 +47,11 @@ public class AuthService {
         String username = event.getRequest();
         CompletableFuture<AppUser> replyFuture = event.getReplyFuture();
         service.retrieveByEmailWithScopes(username)
-                .doOnNext(entity -> {
-                    if(entity.getId() != null){
-                        replyFuture.complete(entity);
-                    } else {
-                        throw new NotFoundAppException("User not found");
-                    }
-                })
-                .doOnError(e -> {
-                    log.error("Error while processing event ", e);
+                .doOnSuccess(replyFuture::complete)
+                .doOnError(e -> log.error("Error while processing event {}", e.getMessage()))
+                .onErrorResume(e -> {
                     replyFuture.completeExceptionally(e);
+                    return Mono.empty();
                 })
                 .subscribe();
     }
@@ -69,16 +62,11 @@ public class AuthService {
         CompletableFuture<AppUser> replyFuture = event.getReplyFuture();
         checkUser(request.getEmail(), request.getPassword())
                 .flatMap(user -> service.retrieveByIdWithScopes(user.getId()))
-                .doOnNext(entity -> {
-                    if(entity.getId() != null) {
-                        replyFuture.complete(entity);
-                    } else {
-                        throw new NotFoundAppException("User not found");
-                    }
-                })
-                .doOnError(e -> {
-                    log.error("Error while processing event ", e);
+                .doOnSuccess(replyFuture::complete)
+                .doOnError(e -> log.error("Error while processing event {}", e.getMessage()))
+                .onErrorResume(e -> {
                     replyFuture.completeExceptionally(e);
+                    return Mono.empty();
                 })
                 .subscribe();
     }

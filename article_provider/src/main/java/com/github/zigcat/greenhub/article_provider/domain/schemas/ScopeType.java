@@ -7,7 +7,7 @@ public enum ScopeType {
     USER_READ("user.read"),
     USER_MANAGE("user.manage"),
     ARTICLE_READ("article.read"),
-    ARTICLE_WRITE("articles.write"),
+    ARTICLE_WRITE("article.write"),
     ARTICLE_MANAGE("article.manage"),
     PAYMENT_VIEW("payment.view"),
     PAYMENT_CAPTURE("payment.capture"),

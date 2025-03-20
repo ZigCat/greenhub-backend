@@ -73,24 +73,20 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                 new RegisterEvent(this, dto, replyFuture);
         log.info("Publishing event...");
         applicationEventPublisher.publishEvent(event);
-        replyFuture.thenAccept(reply -> {
-            MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(reply);
-            sendRegisterResponse(responseMessage, correlationId);
-        }).exceptionally(e -> {
-            int status;
-            if(e instanceof CoreException){
-                status = ((CoreException) e).getCode();
+        replyFuture.handle((reply, e) -> {
+            if(e != null){
+                int status = (e instanceof CoreException ce) ? ce.getCode() : 500;
+                MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(status, e.getMessage());
+                sendRegisterResponse(responseMessage, correlationId);
             } else {
-                status = 500;
+                MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(reply);
+                sendRegisterResponse(responseMessage, correlationId);
             }
-            MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(status, e.getMessage());
-            sendRegisterResponse(responseMessage, correlationId);
             return null;
         });
     }
 
     private void sendRegisterResponse(MessageTemplate<AppUser> responseMessage, String correlationId){
-        log.info("Preparing response message...");
         ProducerRecord<String, MessageTemplate<AppUser>> response =
                 new ProducerRecord<>("user-reg-topic-reply", correlationId, responseMessage);
         userSender.send(Mono.just(SenderRecord.create(response, correlationId)))
@@ -124,18 +120,15 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
         AuthorizeEvent event =
                 new AuthorizeEvent(this, data, replyFuture);
         applicationEventPublisher.publishEvent(event);
-        replyFuture.thenAccept(reply -> {
-            MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(reply);
-            sendAuthorizeResponse(responseMessage, correlationId);
-        }).exceptionally(e -> {
-            int status;
-            if(e instanceof CoreException){
-                status = ((CoreException) e).getCode();
+        replyFuture.handle((reply, e) -> {
+            if(e != null){
+                int status = (e instanceof CoreException ce) ? ce.getCode() : 500;
+                MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(status, e.getMessage());
+                sendAuthorizeResponse(responseMessage, correlationId);
             } else {
-                status = 500;
+                MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(reply);
+                sendAuthorizeResponse(responseMessage, correlationId);
             }
-            MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(status, e.getMessage());
-            sendAuthorizeResponse(responseMessage, correlationId);
             return null;
         });
     }
@@ -172,18 +165,15 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
         CompletableFuture<AppUser> replyFuture = new CompletableFuture<>();
         LoginEvent event = new LoginEvent(this, dto, replyFuture);
         applicationEventPublisher.publishEvent(event);
-        replyFuture.thenAccept(reply -> {
-            MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(reply);
-            sendLoginResponse(responseMessage, correlationId);
-        }).exceptionally(e -> {
-            int status;
-            if(e instanceof CoreException){
-                status = ((CoreException) e).getCode();
+        replyFuture.handle((reply, e) -> {
+            if (e != null) {
+                int status = (e instanceof CoreException ce) ? ce.getCode() : 500;
+                MessageTemplate<AppUser> responseData = new MessageTemplate<>(status, e.getMessage());
+                sendLoginResponse(responseData, correlationId);
             } else {
-                status = 500;
+                MessageTemplate<AppUser> responseMessage = new MessageTemplate<>(reply);
+                sendLoginResponse(responseMessage, correlationId);
             }
-            MessageTemplate<AppUser> responseData = new MessageTemplate<>(status, e.getMessage());
-            sendAuthorizeResponse(responseData, correlationId);
             return null;
         });
     }

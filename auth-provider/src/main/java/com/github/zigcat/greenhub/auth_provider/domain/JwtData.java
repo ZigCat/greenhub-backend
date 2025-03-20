@@ -14,4 +14,5 @@ public class JwtData {
     private String access;
     @Schema
     private String refresh;
+    private AppUser user;
 }

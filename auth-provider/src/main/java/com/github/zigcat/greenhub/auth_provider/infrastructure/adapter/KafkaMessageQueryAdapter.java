@@ -24,6 +24,7 @@ import reactor.kafka.sender.SenderRecord;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 @Component
 @Slf4j
@@ -148,8 +149,10 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                         .next()
                         .onErrorResume(e -> {
                             log.error("Error receiving Kafka response", e);
-                            if(e instanceof ServerErrorException){
-                                return Mono.error(new ServerErrorException(e.getMessage(), ((ServerErrorException) e).getCode()));
+                            if(e instanceof ServerErrorException se){
+                                return Mono.error(new ServerErrorException(se.getMessage(), se.getCode()));
+                            } else if(e instanceof ClientErrorException ce){
+                                return Mono.error(new ClientErrorException(ce.getMessage(), ce.getCode()));
                             }
                             return Mono.error(new ServiceUnavailableInfrastructureException("User service unavailable"));
                         })
@@ -194,6 +197,8 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                             log.error("Error receiving Kafka response", e);
                             if(e instanceof ServerErrorException){
                                 return Mono.error(new ServerErrorException(e.getMessage(), ((ServerErrorException) e).getCode()));
+                            } else if(e instanceof ClientErrorException ce){
+                                return Mono.error(new ClientErrorException(ce.getMessage(), ce.getCode()));
                             }
                             return Mono.error(new ServiceUnavailableInfrastructureException("User service unavailable"));
                         })
@@ -224,8 +229,10 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                                     log.info("Status 200, reading...");
                                     return true;
                                 } else if(status / 100 == 4){
+                                    log.warn("Status 400");
                                     throw new ClientErrorException(record.value().getMessage(), status);
                                 } else if(status / 100 == 5){
+                                    log.warn("Status 500");
                                     throw new ServerErrorException(record.value().getMessage(), status);
                                 }
                             }
@@ -236,8 +243,10 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                         .next()
                         .onErrorResume(e -> {
                             log.error("Error receiving Kafka response", e);
-                            if(e instanceof ServerErrorException){
-                                return Mono.error(new ServerErrorException(e.getMessage(), ((ServerErrorException) e).getCode()));
+                            if(e instanceof ServerErrorException se){
+                                return Mono.error(new ServerErrorException(se.getMessage(), se.getCode()));
+                            } else if(e instanceof ClientErrorException ce){
+                                return Mono.error(new ClientErrorException(ce.getMessage(), ce.getCode()));
                             }
                             return Mono.error(new ServiceUnavailableInfrastructureException("User service unavailable"));
                         })

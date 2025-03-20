@@ -61,7 +61,8 @@ public class AuthService {
                 .map(res ->
                         new JwtData(
                                 securityProvider.generateAccessToken(res),
-                                securityProvider.generateRefreshToken(res)
+                                securityProvider.generateRefreshToken(res),
+                                res
                         )
                 );
     }
@@ -80,7 +81,8 @@ public class AuthService {
                 .subscribeOn(Schedulers.boundedElastic())
                 .map(user -> new JwtData(
                         securityProvider.generateAccessToken(user),
-                        securityProvider.generateRefreshToken(user)
+                        securityProvider.generateRefreshToken(user),
+                        null
                 ));
     }
 

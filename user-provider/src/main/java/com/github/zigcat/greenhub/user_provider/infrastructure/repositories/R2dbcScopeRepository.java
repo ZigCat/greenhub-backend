@@ -46,6 +46,18 @@ public class R2dbcScopeRepository implements ScopeRepository {
     }
 
     @Override
+    public Flux<ScopeModel> findScopesByUserId(Long userId) {
+        return repository.findScopesByUserId(userId)
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found Scope with this User ID");
+                    }
+                    throw new DatabaseException("Scope service unavailable");
+                });
+    }
+
+    @Override
     public Mono<ScopeModel> save(ScopeModel model) {
         return repository.save(model)
                 .onErrorMap(e -> {
@@ -76,6 +88,28 @@ public class R2dbcScopeRepository implements ScopeRepository {
     @Override
     public Mono<Void> delete(Long id) {
         return repository.deleteById(id)
+                .onErrorMap(e -> {
+                    if(e instanceof DataIntegrityViolationException){
+                        throw new ConflictInfrastructureException("Data conflict occurred while trying to transact");
+                    }
+                    throw new DatabaseException("Scope service unavailable");
+                });
+    }
+
+    @Override
+    public Mono<Void> deleteAllByUserId(Long userId) {
+        return repository.deleteAllByUserId(userId)
+                .onErrorMap(e -> {
+                    if(e instanceof DataIntegrityViolationException){
+                        throw new ConflictInfrastructureException("Data conflict occurred while trying to transact");
+                    }
+                    throw new DatabaseException("Scope service unavailable");
+                });
+    }
+
+    @Override
+    public Mono<Void> deleteByScopeAndUser(Long userId, String scope) {
+        return repository.deleteByScopeAndUser(userId, scope)
                 .onErrorMap(e -> {
                     if(e instanceof DataIntegrityViolationException){
                         throw new ConflictInfrastructureException("Data conflict occurred while trying to transact");

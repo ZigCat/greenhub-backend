@@ -1,8 +1,8 @@
 package com.github.zigcat.greenhub.user_provider.presentation.controllers;
 
-import com.github.zigcat.greenhub.user_provider.presentation.utils.UserUtils;
+import com.github.zigcat.greenhub.user_provider.application.usecases.ScopeService;
 import com.github.zigcat.greenhub.user_provider.domain.AppUser;
-import com.github.zigcat.greenhub.user_provider.application.usecases.UserService;
+import com.github.zigcat.greenhub.user_provider.domain.Scope;
 import com.github.zigcat.greenhub.user_provider.presentation.PresentationDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
@@ -21,31 +21,38 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/protected")
+@Slf4j
 @Tag(name = "PROTECTED", description = "User's protected endpoints")
-public class UserController {
-    private final UserService service;
+public class ScopeController {
+    private final ScopeService service;
 
-    @Autowired
-    public UserController(UserService service) {
+    public ScopeController(ScopeService service) {
         this.service = service;
     }
 
     @Operation(
-            summary = "UPDATE",
-            description = "Updating user's info by ID. It doesn't require all poles of UserDTO to be no-null, only necessary for your case",
-            tags = {"User"},
+            summary = "PROMOTE",
+            description = "Promote scope to user. Regular users can promote only article.write, other access scopes can be promoted by system or admins.",
+            tags = {"Scope"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Success",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = AppUser.class)
+                                    schema = @Schema(implementation = Scope.class)
                             )
                     ),
                     @ApiResponse(responseCode = "403", description = "Access Denied",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
-                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Not enough rights for this action\"}")
+                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Access Denied\"}")
+                            )
+                    ),
+                    @ApiResponse(responseCode = "400", description = "Bad request",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":400,\n\"message\":\"Wrong scope param\"}")
                             )
                     ),
                     @ApiResponse(responseCode = "500", description = "Internal server Error",
@@ -56,40 +63,39 @@ public class UserController {
                             ))
             },
             parameters = {
-                    @Parameter(name = "id", description = "User ID", required = true, in = ParameterIn.PATH)
+                    @Parameter(name = "id", description = "User ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "scope", description = "Scope type", required = true, in = ParameterIn.QUERY)
             },
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Updated user's fields",
-                    required = true,
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = PresentationDTO.UserDTO.class)
-                    )
-            ),
             security = @SecurityRequirement(name = "Bearer token")
     )
-    @PatchMapping("/{id}")
-    public Mono<ResponseEntity<AppUser>> update(
-            @PathVariable("id") Long id,
-            @RequestBody PresentationDTO.UserDTO dto,
-            ServerHttpRequest request){
-        return service.update(id, UserUtils.toEntity(dto), request)
+    @PostMapping("/promote/{id}")
+    public Mono<ResponseEntity<Scope>> promote(
+            @RequestParam String scope,
+            @PathVariable("id") Long userId,
+            ServerHttpRequest request
+    ){
+        return service.promote(scope, userId, request)
                 .map(ResponseEntity::ok);
     }
 
     @Operation(
-            summary = "DELETE",
-            description = "Deleting user by ID provided in params",
-            tags = {"User"},
+            summary = "DEMOTE",
+            description = "Demote scope from user. Only admins can access this endpoint.",
+            tags = {"Scope"},
             responses = {
-                    @ApiResponse(responseCode = "204", description = "Success",
-                            content = @Content()
-                    ),
+                    @ApiResponse(responseCode = "204", description = "Success", content = @Content()),
                     @ApiResponse(responseCode = "403", description = "Access Denied",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = PresentationDTO.ApiError.class),
-                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Not enough rights for this action\"}")
+                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Access Denied\"}")
+                            )
+                    ),
+                    @ApiResponse(responseCode = "400", description = "Bad request",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = PresentationDTO.ApiError.class),
+                                    examples = @ExampleObject(value = "{\"code\":403,\n\"message\":\"Wrong scope param\"}")
                             )
                     ),
                     @ApiResponse(responseCode = "500", description = "Internal server Error",
@@ -100,16 +106,18 @@ public class UserController {
                             ))
             },
             parameters = {
-                    @Parameter(name = "id", description = "User ID", required = true, in = ParameterIn.PATH)
+                    @Parameter(name = "id", description = "User ID", required = true, in = ParameterIn.PATH),
+                    @Parameter(name = "scope", description = "Scope type", required = true, in = ParameterIn.QUERY)
             },
             security = @SecurityRequirement(name = "Bearer token")
     )
-    @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<?>> delete(
-            @PathVariable("id") Long id,
+    @PatchMapping("/demote/{id}")
+    public Mono<ResponseEntity<?>> demote(
+            @RequestParam String scope,
+            @PathVariable("id") Long userId,
             ServerHttpRequest request
     ){
-        return service.delete(id, request)
-                .then(Mono.just(ResponseEntity.noContent().build()));
+        return service.demote(scope, userId, request)
+                .map(res -> ResponseEntity.noContent().build());
     }
 }

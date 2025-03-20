@@ -9,16 +9,15 @@ import com.github.zigcat.greenhub.user_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.user_provider.exceptions.ClientErrorException;
 import com.github.zigcat.greenhub.user_provider.exceptions.ServerErrorException;
 import com.github.zigcat.greenhub.user_provider.infrastructure.mappers.UserMapper;
-import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,7 +53,13 @@ public class UserService {
     public Mono<AppUser> retrieve(Long userId){
         return userRepository.findById(userId)
                 .switchIfEmpty(Mono.error(new NotFoundAppException("User with this ID not found")))
-                .map(model -> UserMapper.toEntity(model, null))
+                .flatMap(model -> {
+                    try {
+                        return Mono.just(UserMapper.toEntity(model, null));
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                })
                 .onErrorResume(e -> {
                     log.error("An error occurred: {}", e.getMessage());
                     if(e instanceof ClientErrorException){
@@ -72,10 +77,10 @@ public class UserService {
                 .map(model -> UserMapper.toEntity(model, null))
                 .onErrorResume(e -> {
                     log.error("An error occurred: {}", e.getMessage());
-                    if(e instanceof ClientErrorException){
-                        return Mono.error(new ClientErrorException(e.getMessage(), ((ClientErrorException) e).getCode()));
-                    } else if(e instanceof ServerErrorException){
-                        return Mono.error(new ServerErrorException(e.getMessage(), ((ServerErrorException) e).getCode()));
+                    if(e instanceof ClientErrorException ce){
+                        return Mono.error(new ClientErrorException(ce.getMessage(), ce.getCode()));
+                    } else if(e instanceof ServerErrorException se){
+                        return Mono.error(new ServerErrorException(se.getMessage(), se.getCode()));
                     }
                     return Mono.error(new ServerErrorAppException("An unexpected error occurred"));
                 });
@@ -111,17 +116,28 @@ public class UserService {
                 });
     }
 
+    @Transactional
     public Mono<AppUser> register(AppUser user){
-        user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10)));
-        user.setRole(Role.USER);
-        log.info(UserMapper.toModel(user).toString());
-        return userRepository.save(UserMapper.toModel(user))
-            .flatMap(model -> {
-                List<Scope> defaultScopes = Scope.defaultScopes(model.getId());
-                return scopeService.saveAll(defaultScopes)
-                        .collectList()
-                        .map(scopes -> UserMapper.toEntity(model, scopes));
-            })
+        if(!EmailValidator.getInstance().isValid(user.getEmail())){
+            return Mono.error(new BadRequestAppException("Invalid email address"));
+        }
+        if(isPasswordInvalid(user.getPassword())){
+            return Mono.error(new BadRequestAppException("Password must contain at least 8 symbols, one number, and one special character"));
+        }
+        return userRepository.findByEmail(user.getEmail())
+            .flatMap(existingUser -> Mono.error(new ConflictAppException("User with this email already exists")))
+            .switchIfEmpty(Mono.defer(() -> {
+                user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10)));
+                user.setRole(Role.USER);
+                return userRepository.save(UserMapper.toModel(user))
+                        .flatMap(model -> {
+                            List<Scope> defaultScopes = Scope.defaultScopes(model.getId());
+                            return scopeService.saveAll(defaultScopes)
+                                    .collectList()
+                                    .map(scopes -> UserMapper.toEntity(model, scopes));
+                        });
+            }))
+            .cast(AppUser.class)
             .onErrorResume(e -> {
                 log.error("An error occurred: {}", e.getMessage());
                 if(e instanceof ClientErrorException){
@@ -133,15 +149,26 @@ public class UserService {
             });
     }
 
+    @Transactional
     public Mono<AppUser> update(Long id, AppUser user, ServerHttpRequest request){
+        if(user.getEmail() != null){
+            if(!EmailValidator.getInstance().isValid(user.getEmail())){
+                return Mono.error(new BadRequestAppException("Invalid email address"));
+            }
+        }
+        if(user.getPassword() != null){
+            if(isPasswordInvalid(user.getPassword())){
+                return Mono.error(new BadRequestAppException("Password must contain at least 8 symbols, one number, and one special character"));
+            }
+        }
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!permissions.canAccessAccount(auth, id)) return Mono.error(new ForbiddenAppException("Access denied"));
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundAppException("User with this ID not found")))
                 .flatMap(model -> {
-                    model.setFname(Optional.ofNullable(user.getFname()).orElse(user.getFname()));
-                    model.setLname(Optional.ofNullable(user.getLname()).orElse(user.getLname()));
-                    model.setEmail(Optional.ofNullable(user.getEmail()).orElse(user.getEmail()));
+                    model.setFname(Optional.ofNullable(user.getFname()).orElse(model.getFname()));
+                    model.setLname(Optional.ofNullable(user.getLname()).orElse(model.getLname()));
+                    model.setEmail(Optional.ofNullable(user.getEmail()).orElse(model.getEmail()));
                     if(user.getPassword() != null){
                         model.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10)));
                     }
@@ -159,12 +186,14 @@ public class UserService {
                 });
     }
 
+    @Transactional
     public Mono<Void> delete(Long id, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!permissions.canAccessAccount(auth, id)) return Mono.error(new ForbiddenAppException("Access Denied"));
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundAppException("User with this ID not found")))
-                .flatMap(model -> userRepository.delete(model.getId()))
+                .flatMap(model -> scopeService.deleteByUserId(model.getId())
+                        .then(userRepository.delete(model.getId())))
                 .onErrorResume(e -> {
                     log.error("An error occurred: {}", e.getMessage());
                     if(e instanceof ClientErrorException){
@@ -175,4 +204,10 @@ public class UserService {
                     return Mono.error(new ServerErrorAppException("An unexpected error occurred"));
                 });
     }
+
+    private boolean isPasswordInvalid(String password) {
+        String regex = "^(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[a-z\\d@$!%*?&]{8,}$";
+        return password == null || !password.matches(regex);
+    }
+
 }
