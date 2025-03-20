@@ -1,0 +1,945 @@
+{
+	"info": {
+		"_postman_id": "829f1baf-c0cc-4f75-b796-58ddd5bf0d5e",
+		"name": "GreenInsight",
+		"description": "Данная коллекция содержит все эндпоинты backend. Все запросы делятся на несколько больших групп:\n\n| **Группа** | **Описание** |\n| --- | --- |\n| Авторизация/аутентификация  <br>_Authorization_  <br>  <br>PUBLIC | **Регистрация и авторизация** пользователя на сервисе. |\n| Пользователи  <br>_User_  <br>  <br>PUBLIC/PROTECTED | Выдача **информации о всех или конкретном пользователе, изменению и удалению** пользователя. |\n| Статьи  <br>_Article_  <br>  <br>PUBLIC/PROTECTED | **Создание, изменение, удаление, а также выдача информации об одной или нескольких статьях** по разным параметрам. |\n| Категории  <br>_Categories_  <br>  <br>PUBLIC/PROTECTED | Выдача **информации об одной или нескольких категориях**. _Создание, изменение и удаление_ категорий могут делать **только админы (на сервисе реализовывать не надо)**. |\n| Взаимодействие со статьей  <br>_Interaction_  <br>  <br>PROTECTED | **Взаимодействие** авторизованного пользователя **со статьями** (лайк, просмотр, избранное, рейтинг). |\n\nТакже запросы делятся на PUBLIC (авторизация для них не нужна) и PROTECTED (пользователь должен быть авторизован). Не во всех группах запросов есть деление на эти категории. Запросы каждой категории раскиданы по папкам для вашего удобства.\n\n- **PUBLIC**: запросы для тех, кто не прошел регистрацию или вход на сервис\n    \n- **PROTECTED**: запросы для авторизованных на платформе пользователей (прошли регистрацию или вход).\n    \n\nНекоторые запросы созданы _только для администраторов,_ они помечены непосредственно в их полях (реализовывать на сервисе **пока что не нужно**).\n\nДокументация Swagger доступна по ссылке: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) (доступна **только** после запуска сервера).\n\n> Сноска:  \n\\- В некоторые запросы необходимо передавать тело (body), например, в REGISTRATION и REFRESH. Примеры тел запросов, в которых это необходимо, указаны прямо в них.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "10647705"
+	},
+	"item": [
+		{
+			"name": "Authorization",
+			"item": [
+				{
+					"name": "PUBLIC",
+					"item": [
+						{
+							"name": "REGISTRATION",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"fname\":\"John\",\r\n    \"lname\":\"Doe\",\r\n    \"email\":\"jdoe@example.com\",\r\n    \"password\":\"johndoe@228\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/auth/register",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"register"
+									]
+								},
+								"description": "Регистрация пользователя.\n\nПример успешного запроса (статус 201):\n\n``` json\n{\n    \"id\": 5,\n    \"fname\": \"John\",\n    \"lname\": \"Doe\",\n    \"email\": \"jdoe@example.com\",\n    \"role\": \"USER\",\n    \"regDate\": null,\n    \"scopes\": \"user.read article.read\"\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "LOGIN",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Extract tokens\", function(){\r",
+											"    pm.collectionVariables.set(\"access_token\", pm.response.json().access);\r",
+											"    pm.collectionVariables.set(\"refresh_token\", pm.response.json().refresh);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "johndoe@228",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "jdoe@example.com",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/auth/login",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"login"
+									]
+								},
+								"description": "Авторизация пользователя.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"access\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqZG9lQGV4YW1wbGUuY29tIiwiZXhwIjoxNzQyNDU0MDI0LCJpZCI6NX0.OhFcH7iZ-he3xLKCSkhGmNx3jWL1qUf_0Wt3XOuVA9E\",\n    \"refresh\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqZG9lQGV4YW1wbGUuY29tIiwiZXhwIjoxNzQyNDU1MjI0LCJpZCI6NX0.uf4s3QziBG40dWr5klYb2_d3zYROuzgPVdcDJwNkEek\",\n    \"user\": {\n        \"id\": 5,\n        \"fname\": null,\n        \"lname\": null,\n        \"email\": \"jdoe@example.com\",\n        \"role\": \"USER\",\n        \"regDate\": null,\n        \"scopes\": \"user.read article.read\"\n    }\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "REFRESH",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Extract tokens\", function(){\r",
+											"    pm.collectionVariables.set(\"access_token\", pm.response.json().access);\r",
+											"    pm.collectionVariables.set(\"refresh_token\", pm.response.json().refresh);\r",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"token\": \"{{refresh_token}}\",\r\n    \"tokenType\": \"REFRESH\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/auth/refresh",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"auth",
+										"refresh"
+									]
+								},
+								"description": "Обновление токенов\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"access\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ6aWdjYXQ1MTdAZ21haWwuY29tIiwiZXhwIjoxNzQyNDQ4MDk1LCJpZCI6MX0.8ZgsnZerBGU6kkUJF_wLYSLILqDTZICnKR6bmfkpOMs\",\n    \"refresh\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ6aWdjYXQ1MTdAZ21haWwuY29tIiwiZXhwIjoxNzQyNDQ5Mjk1LCJpZCI6MX0.reEvC28xs0Pv4e1QgYyfLeim3FS39udnsWfWLUtEYTA\",\n    \"user\": null\n}\n\n ```"
+							},
+							"response": []
+						}
+					],
+					"description": "Все запросы этой категории не требуют передачи токенов."
+				}
+			],
+			"description": "Здесь содержатся эндпоинты, связанные с авторизацией и регистрацией на сервисе.\n\nПринцип работы этой системы заключается в следующем:\n\n- [REGISTRATION](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-43cc85b9-fd43-47dc-9de1-35c7a92a05ae): пользователь проходит регистрацию на сервисе, в ответ ему возвращается информация о зарегистрированном пользователе.\n    \n- [LOGIN](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-fed21d11-71f0-4ae6-b06b-39839f729782): после этого необходимо пройти авторизацию для получения _access_ и _refresh_ токенов, а также информации об авторизованном пользователе (храните это все в LocalStorage).\n    \n\n> Авторизация проходится путем передачи логина и пароля в таком формате:  \n`username:password`  \nДанная строка должна быть закодирована в Base64 и передана в заголовок AUTHORIZATION. \n  \n> Время жизни токенов (необходимо отслеживать после получения):  \nACCESS - 10 мин  \nREFRESH - 30 мин \n  \n> В дальнейшем запросы категории PROTECTED будут требовать передачи ACCESS токена в заголовке AUTHORIZATION в формате:  \n`Bearer access_token` \n  \n\n- [REFRESH](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-2f65a8c1-9e96-44a8-9b2c-e48ba9ca16e1): после истечения access токена необходимо автоматически пробросить запрос на обновление для получение новой пары токенов. Иначе после истечения _refresh_ токена авторизацию придется проходить заново ([LOGIN](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-fed21d11-71f0-4ae6-b06b-39839f729782))."
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "PUBLIC",
+					"item": [
+						{
+							"name": "GET ALL user",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/user/public",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"user",
+										"public"
+									]
+								},
+								"description": "Выдача всех пользователей\n\nПример успешного запроса (статус 200):\n\n``` json\n[\n    {\n        \"id\": 1,\n        \"fname\": \"Solomon\",\n        \"lname\": \"Kazakpayev\",\n        \"email\": \"zigcat517@gmail.com\",\n        \"role\": \"ADMIN\",\n        \"regDate\": [\n            2025,\n            3,\n            13,\n            12,\n            33,\n            49,\n            403296000\n        ],\n        \"scopes\": null\n    },\n    {\n        \"id\": 2,\n        \"fname\": \"Denis\",\n        \"lname\": \"Lenin\",\n        \"email\": \"lenin.denis@mail.ru\",\n        \"role\": \"ADMIN\",\n        \"regDate\": [\n            2025,\n            3,\n            13,\n            12,\n            33,\n            49,\n            403296000\n        ],\n        \"scopes\": null\n    },\n    {\n        \"id\": 3,\n        \"fname\": \"Alexander\",\n        \"lname\": \"Kim\",\n        \"email\": \"kim635107@gmail.com\",\n        \"role\": \"ADMIN\",\n        \"regDate\": [\n            2025,\n            3,\n            13,\n            12,\n            33,\n            49,\n            403296000\n        ],\n        \"scopes\": null\n    },\n    {\n        \"id\": 5,\n        \"fname\": \"John\",\n        \"lname\": \"Doe\",\n        \"email\": \"jdoe@example.com\",\n        \"role\": \"USER\",\n        \"regDate\": [\n            2025,\n            3,\n            20,\n            11,\n            49,\n            34,\n            771129000\n        ],\n        \"scopes\": null\n    }\n]\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "GET BY ID user",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/user/public/5",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"user",
+										"public",
+										"5"
+									]
+								},
+								"description": "Выдача пользователя по ID\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 5,\n    \"fname\": \"John\",\n    \"lname\": \"Doe\",\n    \"email\": \"jdoe@example.com\",\n    \"role\": \"USER\",\n    \"regDate\": [\n        2025,\n        3,\n        20,\n        11,\n        49,\n        34,\n        771129000\n    ],\n    \"scopes\": null\n}\n\n ```"
+							},
+							"response": []
+						}
+					],
+					"description": "Все запросы этой категории не требуют передачи токенов."
+				},
+				{
+					"name": "PROTECTED",
+					"item": [
+						{
+							"name": "UPDATE user",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"fname\":\"John\",\r\n    \"lname\": \"Doe\",\r\n    \"email\":\"johnydoe@example.com\",\r\n    \"password\":\"jdoee\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/user/protected/5",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"user",
+										"protected",
+										"5"
+									]
+								},
+								"description": "Обновление полей пользователя. **Важно**: не обязательно все поля в теле запроса должны присутствовать (то есть к примеру можно изменить только имя или пароль и т.д.)\n\n_Доступ_: редактировать пользователь может только себя (админы могут редактировать всех).\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 5,\n    \"fname\": \"John\",\n    \"lname\": \"Doe\",\n    \"email\": \"johnydoe@example.com\",\n    \"role\": \"USER\",\n    \"regDate\": [\n        2025,\n        3,\n        20,\n        11,\n        49,\n        34,\n        771129000\n    ],\n    \"scopes\": null\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "DELETE user",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/user/protected/5",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"user",
+										"protected",
+										"5"
+									]
+								},
+								"description": "Удаление пользователя по ID\n\n_Доступ_: удалять пользователь может только свой аккаунт (админы могут удалять всех пользователей)\n\nПример успешного запроса (статус 204) No Content."
+							},
+							"response": []
+						},
+						{
+							"name": "PROMOTE",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/user/protected/promote/7?scope=article.write",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"user",
+										"protected",
+										"promote",
+										"7"
+									],
+									"query": [
+										{
+											"key": "scope",
+											"value": "article.write"
+										}
+									]
+								},
+								"description": "Повышение пользователя в правах. Пользователи могут сами выдать себе **только** `scope=article.write` (реализовать выдачу этого права в личном кабинете), остальные права выдаются или системой, или на усмотрение администраторов.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": null,\n    \"userId\": 7,\n    \"scope\": \"article.write\"\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "DEMOTE",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/user/protected/demote/7?scope=article.write",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"user",
+										"protected",
+										"demote",
+										"7"
+									],
+									"query": [
+										{
+											"key": "scope",
+											"value": "article.write"
+										}
+									]
+								},
+								"description": "Понижение пользователя в правах. Могут выполнить _**только администраторы**_ (реализовывать **не надо**).\n\nПример успешного запроса (статус 204): No Content"
+							},
+							"response": []
+						}
+					],
+					"description": "Все запросы этой категории требуют передачи _access token_."
+				}
+			],
+			"description": "Здесь содержатся эндпоинты, относящиеся к пользователям."
+		},
+		{
+			"name": "Article",
+			"item": [
+				{
+					"name": "PUBLIC",
+					"item": [
+						{
+							"name": "GET ALL article",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/public/article?creator=1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"public",
+										"article"
+									],
+									"query": [
+										{
+											"key": "creator",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Выдача всех статей для _неавторизованных_ пользователей. Выдаются только бесплатные (`paidStatus=FREE`), прошедшие модерацию (`articleStatus=GRANTED`) статьи _**без контента**_.\n\nПодробнее о модерации статей указано тут: [MODERATE](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-b86b0965-a23d-4860-84b4-01fa1429985c)\n\nПараметр запроса `creator` является опциональным и предполагается, что будет использован на странице автора в графе его статей.\n\nПример успешного запроса (статус 200):\n\n``` json\n[\n    {\n        \"id\": 4,\n        \"title\": \"Sample\",\n        \"content\": null,\n        \"creationDate\": \"2025-03-20T15:34:02.061517\",\n        \"articleStatus\": \"GRANTED\",\n        \"paidStatus\": \"FREE\",\n        \"creator\": {\n            \"id\": 1,\n            \"fname\": \"Solomon\",\n            \"lname\": \"Kazakpayev\",\n            \"role\": \"ADMIN\"\n        },\n        \"category\": {\n            \"id\": 1,\n            \"name\": \"Pollutions\"\n        },\n        \"interaction\": {\n            \"articleId\": 4,\n            \"userId\": null,\n            \"likes\": 0,\n            \"views\": 0,\n            \"rating\": 0.0\n        }\n    }\n]\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "GET BY ID article",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/public/article/4",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"public",
+										"article",
+										"4"
+									]
+								},
+								"description": "Выдача статьи по ID для _неавторизованных_ пользователей. Здесь статьи выдаются уже _**с контентом**_ для просмотра, но только бесплатные (`paidStatus=FREE`) и прошедшие модерацию (`articleStatus=GRANTED`).\n\nПодробнее о модерации статей указано тут: [MODERATE](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-b86b0965-a23d-4860-84b4-01fa1429985c)\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 4,\n    \"title\": \"Sample\",\n    \"content\": \"Sample content\",\n    \"creationDate\": \"2025-03-20T15:34:02.061517\",\n    \"articleStatus\": \"GRANTED\",\n    \"paidStatus\": \"FREE\",\n    \"creator\": {\n        \"id\": 1,\n        \"fname\": \"Solomon\",\n        \"lname\": \"Kazakpayev\",\n        \"role\": \"ADMIN\"\n    },\n    \"category\": {\n        \"id\": 1,\n        \"name\": \"Pollutions\"\n    },\n    \"interaction\": {\n        \"articleId\": 4,\n        \"userId\": null,\n        \"likes\": 0,\n        \"views\": 0,\n        \"rating\": 0.0\n    }\n}\n\n ```"
+							},
+							"response": []
+						}
+					],
+					"description": "Все запросы этой категории не требуют передачи токенов."
+				},
+				{
+					"name": "PROTECTED",
+					"item": [
+						{
+							"name": "CREATE article /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"title\": \"Sample\",\r\n    \"content\": \"Sample content\",\r\n    \"category\": 1\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/platform/protected/article",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"article"
+									]
+								},
+								"description": "Создание статьи. Статьи могут создавать или пользователи с `scope=article.write` , или с `role=AUTHOR` , или администраторы. Требуется наличие категории, к которой прикрепляется статья.\n\nПри создании статьям выдается `articleStatus=MODERATION` , который не позволяет показывать статью всем, кроме администраторов. Изменение статуса происходит в методе [MODERATE](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-b86b0965-a23d-4860-84b4-01fa1429985c).\n\nПример успешного запроса (статус 201):\n\n``` json\n{\n    \"id\": 4,\n    \"title\": \"Sample\",\n    \"content\": \"Sample content\",\n    \"creationDate\": \"2025-03-20T15:34:02.061517\",\n    \"articleStatus\": \"MODERATION\",\n    \"paidStatus\": \"FREE\",\n    \"creator\": {\n        \"id\": 1,\n        \"fname\": \"Solomon\",\n        \"lname\": \"Kazakpayev\",\n        \"role\": \"ADMIN\"\n    },\n    \"category\": {\n        \"id\": 1,\n        \"name\": \"Pollutions\"\n    },\n    \"interaction\": {\n        \"articleId\": 4,\n        \"userId\": null,\n        \"likes\": 0,\n        \"views\": 0,\n        \"rating\": 0.0\n    }\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "GET ALL article /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/protected/article?status=MODERATION&creator=1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"article"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "MODERATION"
+										},
+										{
+											"key": "creator",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Выдача всех статей _авторизованным_ пользователям. Выдаются только прошедшие модерацию (`articleStatus=GRANTED`) статьи _**без контента**_. Видимость платных статей ограничена системой и предполагает наличие подписки, что проверяется системой автоматически.\n\nПодробнее о модерации статей указано тут: [MODERATE](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-b86b0965-a23d-4860-84b4-01fa1429985c)\n\nЗдесь имеется 2 необязательных параметра запроса, которые можно комбинировать:\n\n- `creator` : выдает статьи по ID автора\n    \n- `status` : выдает статьи по статусу (опция _для администраторов_)\n    \n\nПример успешного запроса (статус 200):\n\n``` json\n[\n    {\n        \"id\": 2,\n        \"title\": \"Sample 3\",\n        \"content\": null,\n        \"creationDate\": \"2025-03-13T12:36:27.636082\",\n        \"articleStatus\": \"MODERATION\",\n        \"paidStatus\": \"FREE\",\n        \"creator\": {\n            \"id\": 1,\n            \"fname\": \"Solomon\",\n            \"lname\": \"Kazakpayev\",\n            \"role\": \"ADMIN\"\n        },\n        \"category\": {\n            \"id\": 1,\n            \"name\": \"Pollutions\"\n        },\n        \"interaction\": {\n            \"articleId\": 2,\n            \"userId\": null,\n            \"likes\": 0,\n            \"views\": 0,\n            \"rating\": 0.0\n        }\n    },\n    {\n        \"id\": 6,\n        \"title\": \"Sample 2\",\n        \"content\": null,\n        \"creationDate\": \"2025-03-20T15:38:27.988345\",\n        \"articleStatus\": \"MODERATION\",\n        \"paidStatus\": \"FREE\",\n        \"creator\": {\n            \"id\": 1,\n            \"fname\": \"Solomon\",\n            \"lname\": \"Kazakpayev\",\n            \"role\": \"ADMIN\"\n        },\n        \"category\": {\n            \"id\": 1,\n            \"name\": \"Pollutions\"\n        },\n        \"interaction\": {\n            \"articleId\": 6,\n            \"userId\": null,\n            \"likes\": 0,\n            \"views\": 0,\n            \"rating\": 0.0\n        }\n    }\n]\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "GET BY ID article /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/protected/article/4",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"article",
+										"4"
+									]
+								},
+								"description": "Выдает статью по ID _авторизованным_ пользователям. Обычным пользователям статьи выдаются уже _**с контентом**_ для просмотра, но только прошедшие модерацию (`articleStatus=GRANTED`), в то время как администраторы могут получить любую статью. Видимость платных статей ограничена системой и предполагает наличие подписки, что проверяется системой автоматически.\n\nПодробнее о модерации статей указано тут: [MODERATE](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-b86b0965-a23d-4860-84b4-01fa1429985c)\n\nПример успешного запроса (статус 200):  \n\n``` json\n{\n    \"id\": 2,\n    \"title\": \"Sample 3\",\n    \"content\": \"Sample content 2\",\n    \"creationDate\": \"2025-03-13T12:36:27.636082\",\n    \"articleStatus\": \"MODERATION\",\n    \"paidStatus\": \"FREE\",\n    \"creator\": {\n        \"id\": 1,\n        \"fname\": \"Solomon\",\n        \"lname\": \"Kazakpayev\",\n        \"role\": \"ADMIN\"\n    },\n    \"category\": {\n        \"id\": 1,\n        \"name\": \"Pollutions\"\n    },\n    \"interaction\": {\n        \"articleId\": 2,\n        \"userId\": null,\n        \"likes\": 0,\n        \"views\": 0,\n        \"rating\": 0.0\n    }\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "RECOMMEND article /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/protected/article/recommend",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"article",
+										"recommend"
+									]
+								},
+								"description": "Выдача рекомендованных статей пользователю. Данный эндпоинт требует достаточного количества пользователей и статей в системе и еще находится на _**стадии разработки**_.\n\nПример успешного запроса (статус 200):\n\n``` json\n[\n    {\n        \"id\": 4,\n        \"title\": \"Sample\",\n        \"content\": null,\n        \"creationDate\": \"2025-03-20T15:34:02.061517\",\n        \"articleStatus\": \"GRANTED\",\n        \"paidStatus\": \"FREE\",\n        \"creator\": {\n            \"id\": 1,\n            \"fname\": \"Solomon\",\n            \"lname\": \"Kazakpayev\",\n            \"role\": \"ADMIN\"\n        },\n        \"category\": {\n            \"id\": 1,\n            \"name\": \"Pollutions\"\n        },\n        \"interaction\": {\n            \"articleId\": 4,\n            \"userId\": null,\n            \"likes\": 0,\n            \"views\": 0,\n            \"rating\": 0.0\n        }\n    }\n]\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "UPDATE article /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"title\":\"Sample\",\r\n    \"content\":\"Sample content 1234\",\r\n    \"category\":1\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/platform/protected/article/4",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"article",
+										"4"
+									]
+								},
+								"description": "Обновление статей. Обновлять статьи могут _**только авторы**_ (даже администраторы не имеют доступа к обновлению чужих статей). В отличие от обновления _пользователя_ ([UPDATE user](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-48db2a69-03b9-4833-a063-64ee883bded9))_,_ здесь предполагается наличие всех полей в теле запроса (если какое-то из полей не должно быть изменено, передавать актуальные на данный момент данные).\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 4,\n    \"title\": \"Sample\",\n    \"content\": \"Sample content 1234\",\n    \"creationDate\": \"2025-03-20T15:34:02.061517\",\n    \"articleStatus\": \"GRANTED\",\n    \"paidStatus\": \"FREE\",\n    \"creator\": {\n        \"id\": 1,\n        \"fname\": \"Solomon\",\n        \"lname\": \"Kazakpayev\",\n        \"role\": \"ADMIN\"\n    },\n    \"category\": {\n        \"id\": 1,\n        \"name\": \"Pollutions\"\n    },\n    \"interaction\": {\n        \"articleId\": 4,\n        \"userId\": null,\n        \"likes\": 0,\n        \"views\": 0,\n        \"rating\": 0.0\n    }\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "MODERATE article /a",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/platform/protected/article/moderate/4?status=GRANTED",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"article",
+										"moderate",
+										"4"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "GRANTED"
+										}
+									]
+								},
+								"description": "Модерация статей администраторами по ID. Метод доступен _только администраторам_, однако его реализацию _**необходимо выполнить**_ для удобства модерирования контента платформы.\n\nАдминистратор может вынести статье 2 вердикта:\n\n1. `articleStatus=GRANTED` : статья появится в общем доступе.\n    \n2. `articleStatus=DENIED` : видимость статьи ограничена для дальнейшего пересмотрения.\n    \n\nВердикт администратора передается в параметр запроса.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 4,\n    \"title\": \"Sample\",\n    \"content\": null,\n    \"creationDate\": \"2025-03-20T15:34:02.061517\",\n    \"articleStatus\": \"GRANTED\",\n    \"paidStatus\": \"FREE\",\n    \"creator\": null,\n    \"category\": null,\n    \"interaction\": null\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "INTERACT",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/protected/interact/4?like=1&view=1&rating=5",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"interact",
+										"4"
+									],
+									"query": [
+										{
+											"key": "like",
+											"value": "1"
+										},
+										{
+											"key": "view",
+											"value": "1"
+										},
+										{
+											"key": "rating",
+											"value": "5"
+										}
+									]
+								},
+								"description": "Интеракция со статьей по ID. Бывает 3 вида интеракций, к каждому из которых относится свой параметр запроса:\n\n- `like` : 0 или 1\n    \n- `view` : 0 или 1\n    \n- `rating` : от 1 до 5\n    \n\nОбязательно присутствие в запросе _хотя бы одного_ параметра.\n\n_**ВАЖНО:**_ непосредственно влияет на систему рекомендаций ([RECOMMEND](https://go.postman.co/workspace/3ea6a732-c5a4-4988-97b0-914331857496/documentation/10647705-829f1baf-c0cc-4f75-b796-58ddd5bf0d5e?entity=request-9d551b01-0404-4ff5-80f0-836c22348de8))\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"articleId\": 4,\n    \"userId\": 1,\n    \"likes\": 1,\n    \"views\": 1,\n    \"rating\": 5.0\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "DELETE article /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/protected/article/2",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"article",
+										"2"
+									]
+								},
+								"description": "Удаление статьи по ID. Может быть удалена или автором статьи, или администратором.\n\nПример успешного запроса (статус 204): No Content"
+							},
+							"response": []
+						}
+					],
+					"description": "Все запросы этой категории требуют передачи _access token_."
+				}
+			],
+			"description": "Здесь содержатся эндпоинты, относящиеся к статьям."
+		},
+		{
+			"name": "Category",
+			"item": [
+				{
+					"name": "PUBLIC",
+					"item": [
+						{
+							"name": "GET ALL category",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/public/category",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"public",
+										"category"
+									]
+								},
+								"description": "Выдача всех категорий\n\nПример успешного запроса (статус 200):\n\n``` json\n[\n    {\n        \"id\": 1,\n        \"name\": \"Disasters\"\n    }\n]\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "GET BY ID category",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/public/category/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"public",
+										"category",
+										"1"
+									]
+								},
+								"description": "Выдача категории по ID\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 1,\n    \"name\": \"Disasters\"\n}\n\n ```"
+							},
+							"response": []
+						}
+					],
+					"description": "Все запросы этой категории не требуют передачи токенов."
+				},
+				{
+					"name": "PROTECTED",
+					"item": [
+						{
+							"name": "CREATE category /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\":\"Disasters\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/platform/protected/category",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"category"
+									]
+								},
+								"description": "Создание категории. Доступно _**только администраторам**_.\n\nПример успешного запроса (статус 201):\n\n``` json\n{\n    \"id\": 4,\n    \"name\": \"Disasters\"\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "UPDATE category /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\":\"Pollutions\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "localhost:8080/platform/protected/category/1",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"category",
+										"1"
+									]
+								},
+								"description": "Обновление категории по ID. Доступно _**только администраторам**_.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 1,\n    \"name\": \"Pollutions\"\n}\n\n ```"
+							},
+							"response": []
+						},
+						{
+							"name": "DELETE category /p",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "localhost:8080/platform/protected/category/4",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"platform",
+										"protected",
+										"category",
+										"4"
+									]
+								},
+								"description": "Удаление категории по ID. Доступно _**только администраторам**_.\n\nПример успешного запроса (статус 204): No Content"
+							},
+							"response": []
+						}
+					],
+					"description": "Все запросы этой категории требуют передачи _access token_."
+				}
+			],
+			"description": "Здесь содержатся эндпоинты, относящиеся к категориям статей."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

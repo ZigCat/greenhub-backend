@@ -5,8 +5,12 @@ import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleRepo
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.r2dbc.ReactiveArticleRepository;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.ArticleStatus;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.BadRequestInfrastructureException;
+import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.ConflictInfrastructureException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.DatabaseException;
+import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.NotFoundInfrastructureException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleModel;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -15,6 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
+@Slf4j
 public class R2dbcArticleRepository implements ArticleRepository {
     private final ReactiveArticleRepository repository;
 
@@ -24,19 +29,22 @@ public class R2dbcArticleRepository implements ArticleRepository {
 
     @Override
     public Flux<ArticleModel> findAll() {
-        return repository
-                .findAll()
-                .onErrorMap(e -> new DatabaseException(e.getMessage()));
+        return repository.findAll()
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
+                    throw new DatabaseException("Article service unavailable");
+                });
     }
 
     @Override
     public Flux<ArticleModel> findAllByStatus(String articleStatus) {
         return repository.findAllByStatus(articleStatus)
                 .onErrorMap(e -> {
-                    if(e instanceof IllegalArgumentException){
-                        throw new BadRequestInfrastructureException(e.getMessage());
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found article with this status");
                     }
-                    throw new DatabaseException(e.getMessage());
+                    throw new DatabaseException("Article service unavailable");
                 });
     }
 
@@ -45,10 +53,11 @@ public class R2dbcArticleRepository implements ArticleRepository {
         return repository
                 .findById(id)
                 .onErrorMap(e -> {
-                    if(e instanceof IllegalArgumentException){
-                        throw new BadRequestInfrastructureException(e.getMessage());
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found article with this ID");
                     }
-                    throw new DatabaseException(e.getMessage());
+                    throw new DatabaseException("Article service unavailable");
                 });
     }
 
@@ -57,11 +66,11 @@ public class R2dbcArticleRepository implements ArticleRepository {
         return repository
                 .findAllById(ids)
                 .onErrorMap(e -> {
-                    if(e instanceof IllegalArgumentException
-                            || e instanceof ClassCastException){
-                        throw new BadRequestInfrastructureException(e.getMessage());
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found articles with this IDs");
                     }
-                    throw new DatabaseException(e.getMessage());
+                    throw new DatabaseException("Article service unavailable");
                 });
     }
 
@@ -70,12 +79,13 @@ public class R2dbcArticleRepository implements ArticleRepository {
         return repository
                 .save(model)
                 .onErrorMap(e -> {
-                    if(e instanceof IllegalArgumentException
-                            || e instanceof DataIntegrityViolationException
-                            || e instanceof DuplicateKeyException){
-                        throw new BadRequestInfrastructureException(e.getMessage());
+                    log.error(e.getMessage());
+                    if(e instanceof DataIntegrityViolationException){
+                        throw new ConflictInfrastructureException("Data conflict occurred while trying to transact");
+                    } else if(e instanceof ConstraintViolationException){
+                        throw new BadRequestInfrastructureException("Constraints rules wasn't satisfied");
                     }
-                    throw new DatabaseException(e.getMessage());
+                    throw new DatabaseException("Article service unavailable");
                 });
     }
 
@@ -84,11 +94,10 @@ public class R2dbcArticleRepository implements ArticleRepository {
         return repository
                 .deleteById(id)
                 .onErrorMap(e -> {
-                    if(e instanceof IllegalArgumentException
-                            || e instanceof EmptyResultDataAccessException){
-                        throw new BadRequestInfrastructureException(e.getMessage());
+                    if(e instanceof DataIntegrityViolationException){
+                        throw new ConflictInfrastructureException("Data conflict occurred while trying to transact");
                     }
-                    throw new DatabaseException(e.getMessage());
+                    throw new DatabaseException("Article service unavailable");
                 });
     }
 }

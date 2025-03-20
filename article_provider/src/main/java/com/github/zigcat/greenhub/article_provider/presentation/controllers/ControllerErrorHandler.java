@@ -1,6 +1,6 @@
 package com.github.zigcat.greenhub.article_provider.presentation.controllers;
 
-import com.github.zigcat.greenhub.article_provider.config.CoreException;
+import com.github.zigcat.greenhub.article_provider.exceptions.CoreException;
 import com.github.zigcat.greenhub.article_provider.presentation.DTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

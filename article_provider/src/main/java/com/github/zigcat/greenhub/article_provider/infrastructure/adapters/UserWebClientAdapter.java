@@ -17,7 +17,7 @@ public class UserWebClientAdapter implements UserRepository {
     @Override
     public Mono<AppUser> retrieve(Long id) {
         return webClient.get()
-                .uri("/{id}", id)
+                .uri("public/{id}", id)
                 .retrieve()
                 .bodyToMono(AppUser.class);
     }

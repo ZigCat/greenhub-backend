@@ -1,7 +1,11 @@
 package com.github.zigcat.greenhub.article_provider.infrastructure.adapters;
 
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.InteractionRepository;
+import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.BadRequestInfrastructureException;
+import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.ConflictInfrastructureException;
+import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.DatabaseException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.InteractionModel;
+import com.mongodb.DuplicateKeyException;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -21,13 +25,18 @@ public class InteractionAdapter implements InteractionRepository {
 
     @Override
     public Flux<InteractionModel> findAll() {
-        return reactiveMongoTemplate.findAll(InteractionModel.class);
+        return reactiveMongoTemplate.findAll(InteractionModel.class)
+                .onErrorMap(e -> new DatabaseException("Article service unavailable"));
     }
 
     @Override
     public Flux<InteractionModel> findByArticleId(Long articleId) {
+        if(articleId == null) {
+            return Flux.error(new BadRequestInfrastructureException("ID cannot be null"));
+        }
         Query query = new Query(Criteria.where("articleId").is(articleId));
-        return reactiveMongoTemplate.find(query, InteractionModel.class);
+        return reactiveMongoTemplate.find(query, InteractionModel.class)
+                .onErrorMap(e -> new DatabaseException("Article service unavailable"));
     }
 
     @Override
@@ -42,6 +51,11 @@ public class InteractionAdapter implements InteractionRepository {
                 update,
                 FindAndModifyOptions.options().returnNew(true).upsert(true),
                 InteractionModel.class
-        );
+        ).onErrorMap(e -> {
+                    if(e instanceof DuplicateKeyException){
+                        throw new ConflictInfrastructureException("Data conflict occurred while trying to transact");
+                    }
+                    throw new DatabaseException("Article service unavailable");
+                });
     }
 }
