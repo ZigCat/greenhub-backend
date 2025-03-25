@@ -122,7 +122,7 @@ public class UserService {
             return Mono.error(new BadRequestAppException("Invalid email address"));
         }
         if(isPasswordInvalid(user.getPassword())){
-            return Mono.error(new BadRequestAppException("Password must contain at least 8 symbols, one number, and one special character"));
+            return Mono.error(new BadRequestAppException("Password must contain at least 8 symbols, including one uppercase letter, one lowercase letter, one number, and one special character."));
         }
         return userRepository.findByEmail(user.getEmail())
             .flatMap(existingUser -> Mono.error(new ConflictAppException("User with this email already exists")))
@@ -206,7 +206,7 @@ public class UserService {
     }
 
     private boolean isPasswordInvalid(String password) {
-        String regex = "^(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[a-z\\d@$!%*?&]{8,}$";
+        String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
         return password == null || !password.matches(regex);
     }
 
