@@ -59,6 +59,7 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                                     log.info("Status 200, reading...");
                                     return true;
                                 } else {
+                                    log.error("Error occurred {}", record.value());
                                     throw new CoreException(record.value().getMessage(), status);
                                 }
                             }

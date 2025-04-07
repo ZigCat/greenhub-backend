@@ -85,19 +85,17 @@ public class KafkaMessageQueryAdapter implements MessageQueryAdapter {
                 new AuthorizeEvent(this, dto.token(), replyFuture);
         log.info("Preparing and publishing event for AuthService");
         applicationEventPublisher.publishEvent(event);
-        replyFuture.thenAccept(reply -> {
-            log.info("Reply accepted, preparing response");
-            MessageTemplate<InfrastructureDTO.UserAuth> responseMessage = new MessageTemplate<>(reply);
-            sendResponse(responseMessage, correlationId);
-        }).exceptionally(e -> {
-            int status;
-            if(e instanceof CoreException){
-                status = ((CoreException) e).getCode();
+        replyFuture.handle((reply, e) -> {
+            if(e != null){
+                log.error("An error occurred {}", e.getMessage());
+                int status = (e instanceof CoreException ce) ? ce.getCode() : 500;
+                MessageTemplate<InfrastructureDTO.UserAuth> responseData = new MessageTemplate<>(status, e.getMessage());
+                sendResponse(responseData, correlationId);
             } else {
-                status = 500;
+                log.info("Reply accepted, preparing response");
+                MessageTemplate<InfrastructureDTO.UserAuth> responseMessage = new MessageTemplate<>(reply);
+                sendResponse(responseMessage, correlationId);
             }
-            MessageTemplate<InfrastructureDTO.UserAuth> responseData = new MessageTemplate<>(status, e.getMessage());
-            sendResponse(responseData, correlationId);
             return null;
         });
     }

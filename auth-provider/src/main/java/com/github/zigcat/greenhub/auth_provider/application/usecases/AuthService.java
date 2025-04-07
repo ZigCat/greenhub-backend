@@ -41,7 +41,10 @@ public class AuthService {
                 .doOnNext(entity -> {
                     replyFuture.complete(UserMapper.toAuthDTO(entity));
                 })
-                .doOnError(replyFuture::completeExceptionally)
+                .onErrorResume(e -> {
+                    replyFuture.completeExceptionally(e);
+                    return Mono.empty();
+                })
                 .subscribe();
     }
 
