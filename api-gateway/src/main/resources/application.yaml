@@ -14,6 +14,7 @@ spring:
     name: api-gateway
 greenhub:
   gateway:
+    origin: http://localhost:3000
     auth: http://localhost:8081
     user: http://localhost:8082
     main: http://localhost:8083
