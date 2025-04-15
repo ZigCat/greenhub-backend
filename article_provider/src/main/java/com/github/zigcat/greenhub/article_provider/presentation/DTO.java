@@ -20,7 +20,9 @@ public class DTO {
     @Schema(description = "Category data transfer object")
     public record CategoryDTO(
             @Schema(example = "Ecology")
-            String name
+            String name,
+            @Schema(example = "Simple description for category")
+            String description
     ){}
 
     @Schema(description = "API error response")

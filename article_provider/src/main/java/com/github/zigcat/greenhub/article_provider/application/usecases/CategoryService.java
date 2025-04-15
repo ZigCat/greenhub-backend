@@ -42,7 +42,7 @@ public class CategoryService {
     public Mono<Category> create(Category category, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access denied"));
-        return repository.save(new CategoryModel(category.getName()))
+        return repository.save(CategoryUtils.toModel(category))
                 .map(CategoryUtils::toEntity);
     }
 
@@ -52,7 +52,8 @@ public class CategoryService {
         if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access Denied"));
         return repository.findById(id)
                 .flatMap(model -> {
-                    model.setName(category.getName());
+                    if(category.getName() != null) model.setName(category.getName());
+                    if(category.getDescription() != null) model.setDescription(category.getDescription());
                     return repository.save(model)
                             .map(CategoryUtils::toEntity);
                 });

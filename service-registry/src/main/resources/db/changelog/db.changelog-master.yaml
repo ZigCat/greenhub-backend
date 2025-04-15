@@ -451,3 +451,15 @@ databaseChangeLog:
               - column:
                   name: paypal_plan_id
                   value: "P-5J657680J2084724DM7H22TA"
+  - changeSet:
+      id: 007-alter-categories
+      author: ZigCat
+      changes:
+        - addColumn:
+            tableName: categories
+            columns:
+              - column:
+                  name: description
+                  type: varchar(255)
+                  constraints:
+                    nullable: true

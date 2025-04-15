@@ -756,7 +756,7 @@
 										"category"
 									]
 								},
-								"description": "Выдача всех категорий\n\nПример успешного запроса (статус 200):\n\n``` json\n[\n    {\n        \"id\": 1,\n        \"name\": \"Disasters\"\n    }\n]\n\n ```"
+								"description": "Выдача всех категорий\n\nПример успешного запроса (статус 200):\n\n``` json\n[\n    {\n        \"id\": 1,\n        \"name\": \"Disasters\",\n        \"description\": \"Disasters description\"\n    }\n]\n\n ```"
 							},
 							"response": []
 						},
@@ -778,7 +778,7 @@
 										"1"
 									]
 								},
-								"description": "Выдача категории по ID\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 1,\n    \"name\": \"Disasters\"\n}\n\n ```"
+								"description": "Выдача категории по ID\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 1,\n    \"name\": \"Disasters\",\n    \"description\": \"Disasters description\"\n}\n\n ```"
 							},
 							"response": []
 						}
@@ -805,7 +805,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"name\":\"Disasters\"\r\n}",
+									"raw": "{\r\n    \"name\":\"Disasters\",\r\n    \"description\":\"Disasters description\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -824,7 +824,7 @@
 										"category"
 									]
 								},
-								"description": "Создание категории. Доступно _**только администраторам**_.\n\nПример успешного запроса (статус 201):\n\n``` json\n{\n    \"id\": 4,\n    \"name\": \"Disasters\"\n}\n\n ```"
+								"description": "Создание категории. Доступно _**только администраторам**_.\n\nПример успешного запроса (статус 201):\n\n``` json\n{\n    \"id\": 4,\n    \"name\": \"Disasters\",\n    \"description\":\"Disasters description\"\n}\n\n ```"
 							},
 							"response": []
 						},
@@ -841,11 +841,11 @@
 										}
 									]
 								},
-								"method": "PUT",
+								"method": "PATCH",
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"name\":\"Pollutions\"\r\n}",
+									"raw": "{\r\n    \"description\":\"Disasters description 2\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -865,7 +865,7 @@
 										"1"
 									]
 								},
-								"description": "Обновление категории по ID. Доступно _**только администраторам**_.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 1,\n    \"name\": \"Pollutions\"\n}\n\n ```"
+								"description": "Обновление категории по ID. Доступно _**только администраторам**_.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"id\": 1,\n    \"name\": \"Pollutions\",\n    \"description\": \"Disasters description 2\"\n}\n\n ```"
 							},
 							"response": []
 						},

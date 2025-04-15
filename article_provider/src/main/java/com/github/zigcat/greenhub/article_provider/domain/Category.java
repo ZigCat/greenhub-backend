@@ -14,6 +14,8 @@ public class Category {
     private Long id;
     @Schema(example = "Ecology")
     private String name;
+    @Schema(example = "Simple description for category")
+    private String description;
 
     public Category(Long id) {
         this.id = id;
@@ -21,5 +23,10 @@ public class Category {
 
     public Category(String name) {
         this.name = name;
+    }
+
+    public Category(String name, String description) {
+        this.name = name;
+        this.description = description;
     }
 }

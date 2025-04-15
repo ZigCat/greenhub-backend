@@ -161,7 +161,7 @@ public class CategoryController {
             },
             security = @SecurityRequirement(name = "Bearer token")
     )
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public Mono<ResponseEntity<Category>> update(
             @PathVariable("id") Long id,
             @RequestBody DTO.CategoryDTO dto,

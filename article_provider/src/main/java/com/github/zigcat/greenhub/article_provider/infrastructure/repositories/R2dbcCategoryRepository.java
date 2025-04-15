@@ -68,7 +68,7 @@ public class R2dbcCategoryRepository implements CategoryRepository {
                     if(e instanceof DataIntegrityViolationException){
                         throw new ConflictInfrastructureException("Data conflict occurred while trying to transact");
                     }
-                    throw new DatabaseException("User service unavailable");
+                    throw new DatabaseException("Article service unavailable");
                 });
     }
 }

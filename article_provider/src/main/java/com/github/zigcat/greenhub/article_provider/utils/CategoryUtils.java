@@ -9,18 +9,20 @@ public class CategoryUtils {
     public static CategoryModel toModel(Category entity) {
         return new CategoryModel(
                 entity.getId(),
-                entity.getName()
+                entity.getName(),
+                entity.getDescription()
         );
     }
 
     public static Category toEntity(CategoryModel model) {
         return new Category(
                 model.getId(),
-                model.getName()
+                model.getName(),
+                model.getDescription()
         );
     }
 
     public static Category toEntity(DTO.CategoryDTO dto){
-        return new Category(dto.name());
+        return new Category(dto.name(), dto.description());
     }
 }

@@ -22,6 +22,9 @@ public class CategoryModel {
     @Schema(example = "Pollution")
     private String name;
 
+    @Schema(example = "Simple description for category")
+    private String description;
+
     public CategoryModel(String name) {
         this.name = name;
     }
