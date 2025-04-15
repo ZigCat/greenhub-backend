@@ -11,9 +11,9 @@ import reactor.core.publisher.Mono;
 public interface ReactiveUserRepository extends ReactiveCrudRepository<UserModel, Long> {
     Mono<UserModel> findByEmail(String email);
 
-    @Query("SELECT u.user_id, u.email, u.role, s.scopes FROM users u LEFT JOIN user_scopes s ON u.user_id = s.user_id WHERE u.user_id = :userId")
+    @Query("SELECT u.*, s.scopes FROM users u LEFT JOIN user_scopes s ON u.user_id = s.user_id WHERE u.user_id = :userId")
     Flux<InfrastructureDTO.UserAuth> findUserByIdWithScopes(@Param("userId") Long userId);
 
-    @Query("SELECT u.user_id, u.email, u.role, s.scopes FROM users u LEFT JOIN user_scopes s ON u.user_id = s.user_id WHERE u.email = :username")
+    @Query("SELECT u.*, s.scopes FROM users u LEFT JOIN user_scopes s ON u.user_id = s.user_id WHERE u.email = :username")
     Flux<InfrastructureDTO.UserAuth> findUserByEmailWithScopes(@Param("username") String username);
 }

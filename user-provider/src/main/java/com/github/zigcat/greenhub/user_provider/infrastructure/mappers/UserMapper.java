@@ -8,6 +8,7 @@ import com.github.zigcat.greenhub.user_provider.infrastructure.models.UserModel;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -17,14 +18,17 @@ public class UserMapper {
         return rowsFlux.collectList().map(rows -> {
             if (rows.isEmpty()) return null;
             Long id = rows.get(0).id();
+            String fname = rows.get(0).fname();
+            String lname = rows.get(0).lname();
             String email = rows.get(0).email();
+            LocalDateTime regDate = rows.get(0).regDate();
             String role = rows.get(0).role();
             List<String> scopes = rows.stream()
                     .map(InfrastructureDTO.UserAuth::scopes)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             String scope = String.join(" ", scopes);
-            return new InfrastructureDTO.UserAuth(id, email, role, scope);
+            return new InfrastructureDTO.UserAuth(id, fname, lname, email, regDate, role, scope);
         });
     }
 
@@ -46,8 +50,11 @@ public class UserMapper {
     public static AppUser toEntity(InfrastructureDTO.UserAuth dto){
         return new AppUser(
                 dto.id(),
+                dto.fname(),
+                dto.lname(),
                 dto.email(),
                 Role.valueOf(dto.role()),
+                dto.regDate(),
                 dto.scopes()
         );
     }

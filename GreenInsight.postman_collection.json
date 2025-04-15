@@ -88,7 +88,7 @@
 										"login"
 									]
 								},
-								"description": "Авторизация пользователя.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"access\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqZG9lQGV4YW1wbGUuY29tIiwiZXhwIjoxNzQyNDU0MDI0LCJpZCI6NX0.OhFcH7iZ-he3xLKCSkhGmNx3jWL1qUf_0Wt3XOuVA9E\",\n    \"refresh\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqZG9lQGV4YW1wbGUuY29tIiwiZXhwIjoxNzQyNDU1MjI0LCJpZCI6NX0.uf4s3QziBG40dWr5klYb2_d3zYROuzgPVdcDJwNkEek\",\n    \"user\": {\n        \"id\": 5,\n        \"fname\": null,\n        \"lname\": null,\n        \"email\": \"jdoe@example.com\",\n        \"role\": \"USER\",\n        \"regDate\": null,\n        \"scopes\": \"user.read article.read\"\n    }\n}\n\n ```"
+								"description": "Авторизация пользователя.\n\nПример успешного запроса (статус 200):\n\n``` json\n{\n    \"access\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ6aWdjYXQ1MTdAZ21haWwuY29tIiwiZXhwIjoxNzQ0Njg5NTM0LCJpZCI6MX0.5s9qiMmAgtdU3GKWO-Jfhz5RTaTDE1RjnCnfthwK7xw\",\n    \"refresh\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ6aWdjYXQ1MTdAZ21haWwuY29tIiwiZXhwIjoxNzQ0NjkwNzM0LCJpZCI6MX0.hvr1Qafzf868EyETdtKTNUqoSboJXKaHdVQYKFWRds0\",\n    \"user\": {\n        \"id\": 1,\n        \"fname\": \"John\",\n        \"lname\": \"Doe\",\n        \"email\": \"jdoe@example.com\",\n        \"role\": \"USER\",\n        \"regDate\": [\n            2025,\n            3,\n            18,\n            10,\n            53,\n            21,\n            885159000\n        ],\n        \"scopes\": \"user.read article.read\"\n    }\n}\n\n ```"
 							},
 							"response": []
 						},

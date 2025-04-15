@@ -55,6 +55,16 @@ public class AppUser {
         this.scopes = scopes;
     }
 
+    public AppUser(Long id, String fname, String lname, String email, Role role, LocalDateTime regDate, String scopes) {
+        this.id = id;
+        this.fname = fname;
+        this.lname = lname;
+        this.email = email;
+        this.role = role;
+        this.regDate = regDate;
+        this.scopes = scopes;
+    }
+
     public AppUser(String fname, String lname, String email, String password) {
         this.fname = fname;
         this.lname = lname;
