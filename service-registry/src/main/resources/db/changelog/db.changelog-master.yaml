@@ -463,3 +463,15 @@ databaseChangeLog:
                   type: varchar(255)
                   constraints:
                     nullable: true
+  - changeSet:
+      id: 008-alter-articles
+      author: ZigCat
+      changes:
+        - addColumn:
+            tableName: articles
+            columns:
+              - column:
+                  name: annotation
+                  type: varchar(255)
+                  constraints:
+                    nullable: true

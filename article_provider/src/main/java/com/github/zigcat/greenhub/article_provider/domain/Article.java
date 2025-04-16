@@ -20,6 +20,8 @@ public class Article {
     private String title;
     @Schema(example = "Sample content")
     private String content;
+    @Schema(example = "Sample article")
+    private String annotation;
     @Schema(example = "2025-03-17T13:53:33.149282")
     private LocalDateTime creationDate;
     @Schema(example = "MODERATION")
@@ -33,9 +35,10 @@ public class Article {
     @Schema
     private Interaction interaction;
 
-    public Article(String title, String content, Category category) {
+    public Article(String title, String content, String annotation, Category category) {
         this.title = title;
         this.content = content;
+        this.annotation = annotation;
         this.category = category;
     }
 }

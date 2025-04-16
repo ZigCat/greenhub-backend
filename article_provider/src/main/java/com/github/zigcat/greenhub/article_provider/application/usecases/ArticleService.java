@@ -141,7 +141,7 @@ public class ArticleService {
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!permissions.canPublish(auth)) return Mono.error(new ForbiddenAppException("User can't publish articles"));
         PaidStatus paidStatus = permissions.canBePaid(auth);
-        ArticleModel articleModel = new ArticleModel(article.getTitle(), LocalDateTime.now(), ArticleStatus.MODERATION, paidStatus, auth.getId(), article.getCategory().getId());
+        ArticleModel articleModel = new ArticleModel(article.getTitle(), article.getAnnotation(), ArticleStatus.MODERATION, paidStatus, auth.getId(), article.getCategory().getId());
         return repository.save(articleModel)
                 .flatMap(model -> contentRepository
                         .save(new ArticleContentModel(model.getId(), article.getContent()))
@@ -167,14 +167,19 @@ public class ArticleService {
         return repository.findById(articleId)
                 .flatMap(model -> {
                     if (!permissions.canEdit(auth, model.getCreator())) return Mono.error(new ForbiddenAppException("User can't edit article(s)"));
-                    model.setTitle(article.getTitle());
-                    model.setCategory(article.getCategory().getId());
+                    if(article.getTitle() != null) model.setTitle(article.getTitle());
+                    if(article.getAnnotation() != null) model.setAnnotation(article.getAnnotation());
+                    if(article.getCategory() != null) model.setCategory(article.getCategory().getId());
                     Mono<ArticleModel> updatedArticle = repository.save(model);
                     Mono<ArticleContentModel> updatedContent = contentRepository.findById(model.getId())
                             .switchIfEmpty(Mono.error(new NotFoundAppException("Article content not found")))
                             .flatMap(content -> {
-                                content.setContent(article.getContent());
-                                return contentRepository.save(content);
+                                if(article.getContent() != null){
+                                    content.setContent(article.getContent());
+                                    return contentRepository.save(content);
+                                } else {
+                                    return Mono.just(content);
+                                }
                             });
                     return Mono.zip(updatedArticle, updatedContent)
                             .flatMap(tuple -> {

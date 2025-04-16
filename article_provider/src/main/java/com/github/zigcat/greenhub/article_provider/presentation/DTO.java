@@ -13,6 +13,8 @@ public class DTO {
             String title,
             @Schema(example = "Sample content")
             String content,
+            @Schema(example = "Sample article")
+            String annotation,
             @Schema(example = "1")
             Long category
     ){}

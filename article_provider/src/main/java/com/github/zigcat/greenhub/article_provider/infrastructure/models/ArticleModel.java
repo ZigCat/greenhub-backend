@@ -26,6 +26,9 @@ public class ArticleModel {
     @Schema(example = "How to create articles on GreenHub")
     private String title;
 
+    @Schema(example = "Sample article")
+    private String annotation;
+
     @Column("creation_date")
     private LocalDateTime creationDate;
 
@@ -45,8 +48,9 @@ public class ArticleModel {
     @Schema(example = "1")
     private Long category;
 
-    public ArticleModel(String title, LocalDateTime creationDate, ArticleStatus articleStatus, PaidStatus paidStatus, Long creator, Long category) {
+    public ArticleModel(String title, String annotation, LocalDateTime creationDate, ArticleStatus articleStatus, PaidStatus paidStatus, Long creator, Long category) {
         this.title = title;
+        this.annotation = annotation;
         this.creationDate = creationDate;
         this.articleStatus = articleStatus;
         this.paidStatus = paidStatus;
@@ -54,8 +58,9 @@ public class ArticleModel {
         this.category = category;
     }
 
-    public ArticleModel(String title, ArticleStatus articleStatus, PaidStatus paidStatus, Long creator, Long category) {
+    public ArticleModel(String title, String annotation, ArticleStatus articleStatus, PaidStatus paidStatus, Long creator, Long category) {
         this.title = title;
+        this.annotation = annotation;
         this.creationDate = LocalDateTime.now();
         this.articleStatus = articleStatus;
         this.paidStatus = paidStatus;

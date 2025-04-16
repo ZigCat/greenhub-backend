@@ -13,6 +13,7 @@ public class ArticleUtils {
         return new ArticleModel(
                 entity.getId(),
                 entity.getTitle(),
+                entity.getAnnotation(),
                 entity.getCreationDate(),
                 entity.getArticleStatus(),
                 entity.getPaidStatus(),
@@ -41,6 +42,7 @@ public class ArticleUtils {
                 model.getId(),
                 model.getTitle(),
                 contentData,
+                model.getAnnotation(),
                 model.getCreationDate(),
                 model.getArticleStatus(),
                 model.getPaidStatus(),
@@ -51,6 +53,11 @@ public class ArticleUtils {
     }
 
     public static Article toEntity(DTO.ArticleDTO dto){
-        return new Article(dto.title(), dto.content(), new Category(dto.category()));
+        return new Article(
+                dto.title(),
+                dto.content(),
+                dto.annotation(),
+                dto.category() != null ? new Category(dto.category()) : null
+        );
     }
 }

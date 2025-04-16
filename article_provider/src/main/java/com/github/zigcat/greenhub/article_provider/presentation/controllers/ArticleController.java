@@ -328,7 +328,7 @@ public class ArticleController {
             ),
             security = @SecurityRequirement(name = "Bearer token")
     )
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public Mono<ResponseEntity<Article>> update(
             @RequestBody DTO.ArticleDTO dto,
             @PathVariable("id") Long id,
