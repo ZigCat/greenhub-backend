@@ -4,6 +4,7 @@ import com.github.zigcat.greenhub.article_provider.domain.interfaces.Interaction
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.BadRequestInfrastructureException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.ConflictInfrastructureException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.DatabaseException;
+import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.NotFoundInfrastructureException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.InteractionModel;
 import com.mongodb.DuplicateKeyException;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -37,6 +38,17 @@ public class InteractionAdapter implements InteractionRepository {
         Query query = new Query(Criteria.where("articleId").is(articleId));
         return reactiveMongoTemplate.find(query, InteractionModel.class)
                 .onErrorMap(e -> new DatabaseException("Article service unavailable"));
+    }
+
+    @Override
+    public Mono<InteractionModel> findByUserAndArticle(Long userId, Long articleId) {
+        Query query = new Query(Criteria.where("userId").is(userId).and("articleId").is(articleId));
+        return reactiveMongoTemplate.findOne(query, InteractionModel.class)
+                .switchIfEmpty(Mono.error(new NotFoundInfrastructureException("Interaction not found")))
+                .onErrorMap(e -> {
+                    if(e instanceof NotFoundInfrastructureException) return e;
+                    return new DatabaseException("Article service unavailable");
+                });
     }
 
     @Override

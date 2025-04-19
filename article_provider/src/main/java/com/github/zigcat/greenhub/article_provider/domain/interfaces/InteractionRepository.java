@@ -7,5 +7,6 @@ import reactor.core.publisher.Mono;
 public interface InteractionRepository {
     Flux<InteractionModel> findAll();
     Flux<InteractionModel> findByArticleId(Long articleId);
+    Mono<InteractionModel> findByUserAndArticle(Long userId, Long articleId);
     Mono<InteractionModel> upsert(Long userId, Long articleId, Integer like, Integer views, Double rating);
 }

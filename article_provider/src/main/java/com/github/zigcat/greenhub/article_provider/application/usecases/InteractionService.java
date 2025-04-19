@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.article_provider.application.usecases;
 
+import com.github.zigcat.greenhub.article_provider.application.exceptions.ForbiddenAppException;
 import com.github.zigcat.greenhub.article_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.article_provider.domain.Interaction;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.InteractionRepository;
@@ -46,6 +47,17 @@ public class InteractionService {
                     interaction.setRating(ratingCount > 0 ? (double) totalRating / ratingCount : 0.0);
                     return interaction;
                 });
+    }
+
+    public Mono<Interaction> retrieveByUserAndArticle(Long userId,
+                                                      Long articleId,
+                                                      ServerHttpRequest request){
+        AuthorizationData auth = permissions.extractAuthData(request);
+        if(auth.isAdmin() || auth.getId().equals(userId)){
+            return interactions.findByUserAndArticle(userId, articleId)
+                    .map(InteractionUtils::toEntity);
+        }
+        return Mono.error(new ForbiddenAppException("Access Denied"));
     }
 
     public Mono<Interaction> upsert(Interaction interaction, ServerHttpRequest request){
