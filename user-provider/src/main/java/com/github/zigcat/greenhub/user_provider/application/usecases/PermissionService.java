@@ -29,6 +29,7 @@ public class PermissionService {
     }
 
     public boolean canAccessAccount(AuthorizationData auth, Long id){
-        return auth.isAdmin() || auth.getId().equals(id) || auth.getScopes().contains("user.manage");
+        return auth.isAdmin() || auth.getId().equals(id)
+                || auth.getScopes().contains("user.manage");
     }
 }

@@ -125,7 +125,8 @@ public class UserService {
             return Mono.error(new BadRequestAppException("Password must contain at least 8 symbols, including one uppercase letter, one lowercase letter, one number, and one special character."));
         }
         return userRepository.findByEmail(user.getEmail())
-            .flatMap(existingUser -> Mono.error(new ConflictAppException("User with this email already exists")))
+            .flatMap(existingUser ->
+                    Mono.error(new ConflictAppException("User with this email already exists")))
             .switchIfEmpty(Mono.defer(() -> {
                 user.setPassword(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10)));
                 user.setRole(Role.USER);

@@ -7,7 +7,7 @@ import com.github.zigcat.greenhub.article_provider.infrastructure.models.Interac
 public class InteractionUtils {
     public static InteractionProjection toProjection(InteractionModel model){
         InteractionProjection projection = new InteractionProjection();
-        projection.calculateScore(model.getLike(), model.getViews(), model.getRating());
+        projection.calculateScore(Boolean.TRUE.equals(model.getLike()), model.getViews(), model.getRating());
         projection.setId(model.getId());
         projection.setUserId(model.getUserId());
         projection.setArticleId(model.getArticleId());
@@ -18,7 +18,7 @@ public class InteractionUtils {
         return new Interaction(
                 model.getArticleId(),
                 model.getUserId(),
-                model.getLike() ? 1 : 0,
+                Boolean.TRUE.equals(model.getLike()) ? 1 : 0,
                 model.getViews(),
                 model.getRating() != null ? model.getRating().doubleValue() : 0.0
         );

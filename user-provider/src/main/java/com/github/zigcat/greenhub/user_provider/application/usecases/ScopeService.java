@@ -71,8 +71,7 @@ public class ScopeService {
                             return Mono.error(new BadRequestAppException("User already has this scope"));
                         }
                         Scope newScope = new Scope(userId, target.getScope());
-                        return repository.save(ScopeMapper.toModel(newScope))
-                                .map(ScopeMapper::toEntity);
+                        return repository.save(ScopeMapper.toModel(newScope)).map(ScopeMapper::toEntity);
                     });
         } catch (IllegalArgumentException e){
             return Mono.error(new BadRequestAppException("Wrong scope param"));

@@ -121,19 +121,38 @@ public class ArticleService {
         AuthorizationData auth = permissions.extractAuthData(request);
         return recommendationService.getRecommendations(auth.getId())
                 .flatMapMany(repository::findAllById)
-                .flatMapSequential(model -> {
-                            Mono<AppUser> creator = userRepository.retrieve(model.getCreator());
-                            Mono<Category> category = categoryService.retrieve(model.getId());
-                            Mono<Interaction> interaction = interactionService.retrieve(model.getId());
-                            return Mono.zip(creator, category, interaction)
-                                    .map(tuple -> ArticleUtils
-                                            .toEntity(model,
-                                                    null,
-                                                    tuple.getT1(),
-                                                    tuple.getT2(),
-                                                    tuple.getT3()
-                                            ));
-                        });
+                .flatMap(model -> {
+                    log.info("Mapping model: {}", model);
+                    Mono<AppUser> creator = userRepository.retrieve(model.getCreator())
+                            .switchIfEmpty(Mono.defer(() -> {
+                                log.warn("Creator not found for ID: {}", model.getCreator());
+                                return Mono.empty();
+                            }));
+
+                    Mono<Category> category = categoryService.retrieve(model.getCategory())
+                            .switchIfEmpty(Mono.defer(() -> {
+                                log.warn("Category not found for ID: {}", model.getId());
+                                return Mono.empty();
+                            }));
+
+                    Mono<Interaction> interaction = interactionService.retrieve(model.getId())
+                            .switchIfEmpty(Mono.defer(() -> {
+                                log.warn("Interaction not found for Article ID: {}", model.getId());
+                                return Mono.empty();
+                            }));
+
+                    return Mono.zip(creator, category, interaction)
+                            .doOnNext(tuple -> log.info("Zipped result: {}", tuple))
+                            .map(tuple -> {
+                                Article a = ArticleUtils.toEntity(model, null, tuple.getT1(), tuple.getT2(), tuple.getT3());
+                                log.info("Article {}", a);
+                                return a;
+                            })
+                            .onErrorResume(e -> {
+                                log.error("Mapping failed for model: {}", model, e);
+                                return Mono.empty();
+                            });
+                });
     }
 
     @Transactional
