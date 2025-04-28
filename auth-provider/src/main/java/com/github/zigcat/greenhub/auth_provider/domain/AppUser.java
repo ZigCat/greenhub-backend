@@ -47,4 +47,11 @@ public class AppUser {
         this.email = email;
         this.password = password;
     }
+
+    public AppUser(Long id, String email, Role role, String scopes) {
+        this.id = id;
+        this.email = email;
+        this.role = role;
+        this.scopes = scopes;
+    }
 }

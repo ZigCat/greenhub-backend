@@ -10,6 +10,7 @@ import reactor.core.publisher.Mono;
 public interface ArticleRepository {
     Flux<ArticleModel> findAll();
     Flux<ArticleModel> findAllByStatus(String articleStatus);
+    Flux<ArticleModel> findAllByCreator(Long creator);
     Mono<ArticleModel> findById(Long id);
     Flux<ArticleModel> findAllById(Iterable<Long> ids);
     Mono<ArticleModel> save(ArticleModel model);

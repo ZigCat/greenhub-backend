@@ -17,8 +17,4 @@ stripe:
   key:
     public: ${STRIPE_PUBLIC}
     secret: ${STRIPE_SECRET}
-paypal:
-  url: https://api-m.sandbox.paypal.com
-  key:
-    client: ${PAYPAL_CLIENT}
-    secret: ${PAYPAL_SECRET}
+    webhook: ${STRIPE_WEBHOOK}

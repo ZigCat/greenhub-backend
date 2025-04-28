@@ -475,3 +475,78 @@ databaseChangeLog:
                   type: varchar(255)
                   constraints:
                     nullable: true
+  - changeSet:
+      id: 009-create-auth-table
+      author: ZigCat
+      changes:
+        - createSequence:
+            sequenceName: userkey_sequence
+            startValue: 1
+            allocationSize: 1
+        - createTable:
+            tableName: user_key
+            columns:
+              - column:
+                  name: user_key_id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: username
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: public_key
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: private_key
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false
+        - addDefaultValue:
+            columnName: user_key_id
+            tableName: user_key
+            defaultValueComputed: "nextval('userkey_sequence')"
+  - changeSet:
+      id: 010-insert-auth-table
+      author: ZigCat
+      changes:
+        - insert:
+            tableName: user_key
+            columns:
+              - column:
+                  name: username
+                  value: "zigcat517@gmail.com"
+              - column:
+                  name: public_key
+                  value: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4KOnuW0abhk5MsEBMxL7UIzSkLhaWAZE3G6DGBz8FOrrNgEl74r2gvmMbqu79DTnYHzXJYgRgPm89ra/Vl1FgxXD3fLB/OqdggDogWWgA2TyIPxrczfrQCWX56fSV010f1nO1Amj8GIrHdKCpp5m67+LKwz+W9n55cdMfffq70QePYm3f+kmfpZSSEvu6ycZTpnWglWc9V++ATYiNPTRyFE7fwQ7MLVYKI/DPoXXGzvi8YYqDpeFLCm5zxPWYk+XeCNHhUgcDg9LaMbn3aQEuYVlGceWbUpzf9L9OlkdSsiTVVxgROXHhchye9tilkuq1VnUhyDzY2Vze+PbzC6Y6QIDAQAB"
+              - column:
+                  name: private_key
+                  value: "MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDgo6e5bRpuGTkywQEzEvtQjNKQuFpYBkTcboMYHPwU6us2ASXvivaC+Yxuq7v0NOdgfNcliBGA+bz2tr9WXUWDFcPd8sH86p2CAOiBZaADZPIg/GtzN+tAJZfnp9JXTXR/Wc7UCaPwYisd0oKmnmbrv4srDP5b2fnlx0x99+rvRB49ibd/6SZ+llJIS+7rJxlOmdaCVZz1X74BNiI09NHIUTt/BDswtVgoj8M+hdcbO+LxhioOl4UsKbnPE9ZiT5d4I0eFSBwOD0toxufdpAS5hWUZx5ZtSnN/0v06WR1KyJNVXGBE5ceFyHJ722KWS6rVWdSHIPNjZXN749vMLpjpAgMBAAECggEBAJ0PL0yA0LLbpdcrhGguRFIcM3iFvHzA3VJ1Xej1EvaZDRz0Do79zL7kNWCHZ+ElQASBJHeUPBC+C3U/bmW2zswI4qoCeckYTEnB0s3tvMPCx1tywLmNBkkSP7Py7Sim+eW0Z9xuZRXDvTubnEdchr8ba/UMn6aer48NGhkUxkjEOzmj3gPU5idtE9pdDuRWstk2gm1sBBY1fOvJDqGKMAheV20fLEN3yV6NsFw8XA0NF40uV7FVOjBaQUA8RyFGUFVXqxJ7sN5qiWwmuM1pEIRssSV3lPoinvClU5v2KGBFfhDN6W3vekd1ayKaDlZnF2K7cPbTYcTyoDgb2x3FbxECgYEA8n5O00AQ0n6rqLrn51ygWdSFb31co+JlaBxgtCdZCD88qF+oNa/1WAOtTJiLv4Gs2QN0N2ZkpGPfTFkUNx7UILAD3Nnpdx0RYYzpVuzZaRqJGrIOyzfRKEQtTpyYhJ/KFQR8UB9JvqarzGG4IHVErjV2fiQTtKkwHeJrtSzza3UCgYEA7SbEXFIFF0XxObXKYCWcdTRQN+kboEHLGkeOLVYJ9Am2X8gGwE4MTuKABCNzTLUI2+oMT7Q7xnE1vcVNbI8SQ4X3sOtCBTWriONEdLKhtjZUVoFwrML0X8fEQKQT/EOltY1xjqz0PvWP3vXgluiV39u5rssfqARwpnG6mGWarSUCgYEA0Ek1o7ZPvL4Y7CE+uDeTdBVbV9wyCoKX38kgNx3lF3RZwbYIYbT149ekrzoIL0JPGUgiNsO4hotSbd3Fw2KzijAl4Tk7k5hgKY5Djup6BBFK2qc+lccn3JJS6EcRqjkl9s+Xh6qYSS4YOsFkylxv1cMOOGL8mh0Iu2KUaVZm71ECgYBeFVMxjRiX8xeQXZ68Ji+8D9UDWWesXG3HLzwooEmyl2fS9/g1ssEPSqye97F2bRvmoyPfOxG72I4Ji4z71IbaYvuxJKQ8jN5QoFk4MuYU89jhuNiKsY1hsk8Zlf6Xxf6n2EWE5PjBQYqiWcmQFRXgibtQrSUR8zD914C/lQ+YQQKBgQCVlThjL7E7aV/MARvTOnbJ3NdP2k6OH632w1wkoH4CgoVzmKiLTNLSm63I9YQ7aRG9lp0Dot74mA8GX5zdwhBp+nrlR1UsxATheVbxJa+OrZmtQoOBCiZEGJRJnEjmOvhz1XKen8CMwU4G++XDhnIEHth0wL8LcdB0gOzCDz/6WQ=="
+        - insert:
+            tableName: user_key
+            columns:
+              - column:
+                  name: username
+                  value: "lenin.denis@mail.ru"
+              - column:
+                  name: public_key
+                  value: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1VRPjKEEWkzb9gmayW4dhb5q4PXbEJ8kWG6s1v5hAA4ILJ8QNKRu/74HQlSzeZ+2vPfSJ+qBwNbBROHgoZNEPNi1Xk38cZpV4pLYvw7eWjeaudFypcBnjTT8rkK88weso3YwLcNSJWTFlnye2RFjMbRAnFJ5ScUo72fsw5udH9/IxmV2VxskNENoXWrrZSdpjfZ8xbYDo1UUTb4C13iJFkLejn/0Vm7Km789GN0R3UgMBFv5dEEn4jDrUd1fbtReU++InKx7vsu/roSsH+sL/UDQxLUlrwkqbo+ouxH6zjYByhRXU/LLTJSQ+4ca8rvKJR78kENRpmfeDrAwXewuAQIDAQAB"
+              - column:
+                  name: private_key
+                  value: "MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDVVE+MoQRaTNv2CZrJbh2Fvmrg9dsQnyRYbqzW/mEADggsnxA0pG7/vgdCVLN5n7a899In6oHA1sFE4eChk0Q82LVeTfxxmlXikti/Dt5aN5q50XKlwGeNNPyuQrzzB6yjdjAtw1IlZMWWfJ7ZEWMxtECcUnlJxSjvZ+zDm50f38jGZXZXGyQ0Q2hdautlJ2mN9nzFtgOjVRRNvgLXeIkWQt6Of/RWbsqbvz0Y3RHdSAwEW/l0QSfiMOtR3V9u1F5T74icrHu+y7+uhKwf6wv9QNDEtSWvCSpuj6i7EfrONgHKFFdT8stMlJD7hxryu8olHvyQQ1GmZ94OsDBd7C4BAgMBAAECggEBAJMyDYGXSI2WIt/tWKRMGorCDLUUbwdVB5sNIq1l8EA9bl57ko8ANqa31AJstzngfhJ9XMC2CrmodMq2oGxcVOU3Ek3zuZAZUdF4SZ3rAHl3jIdSgazkyY6hVQhYfE+kp/ZSAoRRFUk/8yYW7vQQD0Wofjxem9nO9KPcLX36zbvDRc0fM+xJWDXx9uEUAy1ZSbNBGt+ToBHWJ6/IfVoKfFFuFwFQHrKh5Q8R6MPBla9dnrg89gUJerEd52jqNKADbBDVHc8Hmyiz4jHJZL1Y8t5XtZYCCkU/Hr3txddKYT9+sAynAB9M7LCe+3QU6pn2pmvdbnrvXJACfdmq/TIgA9ECgYEA/+6O5ozh465fCDrWDPEqAtvS7IL+IYoWy2MnScmRl4rl7khAW+UtRe7FESMpgBAxbnfEh+y0iGuZtp73KP8SXDVFxOrLIxR0njXTRwpI/BCc1lGVY2E4uwAaJ7OpxxFdYmmvhd91yAGigrcEGYMFN8WoJPs9e7zkd0vExo/sM1MCgYEA1WLZYukmOkEhSRaKbaD1ut0aW4/sTtqBJX0lLNiBqZRcr+A3N4HCu0RXWy//peeE0Ot5rOSZjf1HYTmsGOUmAeoe0saGO9Y1ds94Z/ev39Sq7kHOQjTC2TMam+E0NNv7s7chA99Au3opcdHWDT2dnW6XgV8BINj3GyY8MaOf4tsCgYBAXlycicRqgjmulTWuzZz2WRlkmNGX1+ZBwy9ndIXkqm+IDa36LtrDIvl3hPN0HR6BnSfV0+fYA9AGSVb6faS9gjyI+VCcAxINlJYN4P1YQElh8eTzuMkO50iswZgq1Cg7jz8xGXHDGv4niCZE0Foom9Ldcj8Vdv2zL2BPXHVYtwKBgQDA/M2u7z5roUwBVimMTO7xOdcEyH3oMyZqSWy9ynI6dLv/NMG7qdf8liqLhjWoTmOIr+8ztuxJxrAv9oD3Ywek46FM78+nfmyML8euAA1IWobdRRbOOfmfhuCh6mPVCr/yIcXyQo/A/xNMpYL6JqfOIp9TmiDjHFcgbswx+NI50QKBgQCbcnDqMMlrAm3J6iHlSQK2H5xZHBPeLM1jYGCRE/lr4Z9B9NkcdVe/QsvPGxewL4H5wlILQBJQNmB0GEFzGis9b5f5bvXMkVw1YYrrcKd22ud1vJRjukbtsjIe/9K5cubMruiiAiW1snv/XR058LhmBNldZ43oaki3MBNRvtsdLQ=="
+        - insert:
+            tableName: user_key
+            columns:
+              - column:
+                  name: username
+                  value: "kim635107@gmail.com"
+              - column:
+                  name: public_key
+                  value: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwBjy2CerNccNkV7SqV7C/gABJByV0j+jM79Wr39uX3Gzw7nyJJDwVaj7DyI2yLt2vDjePnqCBQ9Tp8sZ3qE29N02T+91LBuWGCRJ8WLIGghmrY/AkXzliS9NKt4dOHfEjEX803h8iwSy+nnK+eADhndmoxuSKLylKT6LTyAJoEMNxhCr0Otz6OmO0VxUQ7BFc+J/doZ2xxOIkRme/2EZoydYwemKDufCLywTCk1wj84pgbeMM5lidSwcP0CFAIzf69DnIRq4xxmB/6r78w7/8qw8ZrEq5KT7sz+9/pEdokMFYGbXyMB0ckI4Bk3Mj4831yGmupIISJIeAAzkLpGMowIDAQAB"
+              - column:
+                  name: private_key
+                  value: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDAGPLYJ6s1xw2RXtKpXsL+AAEkHJXSP6Mzv1avf25fcbPDufIkkPBVqPsPIjbIu3a8ON4+eoIFD1OnyxneoTb03TZP73UsG5YYJEnxYsgaCGatj8CRfOWJL00q3h04d8SMRfzTeHyLBLL6ecr54AOGd2ajG5IovKUpPotPIAmgQw3GEKvQ63Po6Y7RXFRDsEVz4n92hnbHE4iRGZ7/YRmjJ1jB6YoO58IvLBMKTXCPzimBt4wzmWJ1LBw/QIUAjN/r0OchGrjHGYH/qvvzDv/yrDxmsSrkpPuzP73+kR2iQwVgZtfIwHRyQjgGTcyPjzfXIaa6kghIkh4ADOQukYyjAgMBAAECggEAfsz5H+2veiQWtKqe6+X9WKSwHCIyU0JmfDYFBntbY+0t+Di5uaFiw2hzsJ2pA/+adMwlB6DeSnC/i7bpMKfCGwgaXdF2ytK61Ny/YnMOGwEIpfCJ8H89FL0Adxd+ulN0jhN0vDKAI1PKwMO8VAymxw/x1CDS7cj4TK1YT7aaJAp6PBxk49Kf+KIiRD93EmDn4sUGUoZpNPpJMjjSKhM2zTY+cB+Z4Orf7dsWmLHGLwbFVdkVW804F6xvvJmQP1QqgzVCsxMdS3bvFYC+Aq8917WxmHlrnN+c29XuNyDcot7qa+p7wV4ObhPscolTXlpYv4TVOqrqk01crXfrpCV/YQKBgQDfIJ4Ka+xEfSelit4+vhc4CQKX2a8Q7sfDxjERf38QhXZPApxIu9GJeBQyJkKnlw5Z8UWJGxLO/4xce6dFHUa1dXZD3SPCCPeWWGaGO8g0pouUQolRDjah7W0Tue3Fc86SyKAcAKEomOARBu0fDnbyJFgzmm4vXFj+9dBZzRJb7wKBgQDcZgSgTeuug5TfRa1uBCRpsDN63x2JPIVxEN4Qc/32RX/sVYdIwQ6YMvHiVgPVHC3Ih8R8Z0+Erv+83r3K1Ixi5bP1zb3qOq/iEGoNTqrxOWgcfoNWkb4un8RzUmVyVt0WtarNy83erbJhqbnhv2jyoFyVSRb2i6WClS5Crne2jQKBgCXc0hSwpaIlnsGvo/D/rs76cG82KEf2TP3CtvbiLLyv+RiFN+H7xR3Pu5Wa+nqX3n6Su5r9dh6cLMRQ01yeEC6gpRX1A6lcfi8MBzHGGT4d+NeKxuRzRgAKWxUa2udDtI0h8FFwJejOsE8TXs+DU9nZIwJ2tTXiNNPnAJkMfI4PAoGAElvBGOVEs3Wsaeiw6JAZxF/z+dEp8auD5gYkqTQwPFpPrIz3Rt0l7RGZSmQlz5OYULLWcBJe8ktta/sVzhZkVzyQ//GSVzdqPSdm3hLmdE9216DGKejb8aBHSd/cKWkI44JgZuIKFPlc+XucyywZftRSwfCjpAe/0p/Aibdkq2UCgYEArE3Ynxe9VO+DRHrQSG3g2lh2tmefd8mRBY4LmHKKguqIpfchTVZMhTNaEzuNhummpFfl6uX+xw9DNqR22OBj3kjnVAXgcjYSeDhIJFi3dmfiJOcPIZjksjgYEPt7rUmhMhQmgLtsmBf/FurO8RckZF6OwrykyP+lQ79ke0snvkI="

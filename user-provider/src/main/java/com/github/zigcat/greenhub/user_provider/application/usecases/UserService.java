@@ -4,6 +4,8 @@ import com.github.zigcat.greenhub.user_provider.application.exceptions.*;
 import com.github.zigcat.greenhub.user_provider.domain.AppUser;
 import com.github.zigcat.greenhub.user_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.user_provider.domain.Scope;
+import com.github.zigcat.greenhub.user_provider.domain.interfaces.ArticleRepository;
+import com.github.zigcat.greenhub.user_provider.domain.interfaces.AuthRepository;
 import com.github.zigcat.greenhub.user_provider.domain.interfaces.UserRepository;
 import com.github.zigcat.greenhub.user_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.user_provider.exceptions.ClientErrorException;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,15 +29,21 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final ScopeService scopeService;
+    private final AuthRepository authAdapter;
+    private final ArticleRepository articleAdapter;
     private final PermissionService permissions;
 
     public UserService(
             UserRepository userRepository,
             ScopeService scopeService,
+            AuthRepository authAdapter,
+            ArticleRepository articleAdapter,
             PermissionService permissions
     ) {
         this.userRepository = userRepository;
         this.scopeService = scopeService;
+        this.authAdapter = authAdapter;
+        this.articleAdapter = articleAdapter;
         this.permissions = permissions;
     }
 
@@ -87,9 +96,13 @@ public class UserService {
     }
 
     public Mono<AppUser> retrieveByIdWithScopes(Long id){
+        log.info("RETRIEVING USER initiated");
         return userRepository.findUserByIdWithScopes(id)
                 .switchIfEmpty(Mono.error(new NotFoundAppException("User with this ID not found")))
-                .map(UserMapper::toEntity)
+                .map(dto -> {
+                    log.info("Getting {}", dto);
+                    return UserMapper.toEntity(dto);
+                })
                 .onErrorResume(e -> {
                     log.error("An error occurred: {}", e.getMessage());
                     if(e instanceof ClientErrorException){
@@ -194,7 +207,9 @@ public class UserService {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundAppException("User with this ID not found")))
                 .flatMap(model -> scopeService.deleteByUserId(model.getId())
-                        .then(userRepository.delete(model.getId())))
+                        .then(articleAdapter.erase(model.getId()))
+                        .then(userRepository.delete(model.getId()))
+                        .then(authAdapter.erase(model.getEmail())))
                 .onErrorResume(e -> {
                     log.error("An error occurred: {}", e.getMessage());
                     if(e instanceof ClientErrorException){
@@ -204,6 +219,37 @@ public class UserService {
                     }
                     return Mono.error(new ServerErrorAppException("An unexpected error occurred"));
                 });
+    }
+
+    public Mono<AppUser> login(String authToken){
+        log.info("VALIDATING USER initiated");
+        return extractAuthData(authToken)
+                .flatMap(user -> checkUser(user.getEmail(), user.getPassword()))
+                .flatMap(user -> retrieveByIdWithScopes(user.getId())
+                        .map(res -> {
+                            log.info("Getting {}", res);
+                            return res;
+                        }));
+    }
+
+    public Mono<AppUser> checkUser(String username, String password){
+        return retrieveByEmail(username)
+                .map(user -> {
+                    if(BCrypt.checkpw(password, user.getPassword())){
+                        return user;
+                    }
+                    throw new ForbiddenAppException("Wrong password");
+                }).switchIfEmpty(Mono.error(new NotFoundAppException("User not found")));
+    }
+
+    private Mono<AppUser> extractAuthData(String authToken){
+        return Mono.fromCallable(() -> {
+            String credentials = new String(Base64.getDecoder().decode(authToken));
+            String[] parts = credentials.split(":", 2);
+            String username = parts[0];
+            String password = parts[1];
+            return new AppUser(username, password);
+        });
     }
 
     private boolean isPasswordInvalid(String password) {

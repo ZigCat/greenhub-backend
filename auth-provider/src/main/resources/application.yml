@@ -1,13 +1,14 @@
 server:
   port: 8081
 spring:
-  kafka:
-    bootstrap-servers: 172.18.173.155:9092
   application:
     name: auth-provider
+  r2dbc:
+    url: r2dbc:postgresql://${POSTGRES_DB_HOST}/greenhub
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 jwt:
   secret:
-    access: x5Xq9PAiHuPFFJ/pG+H45JNQ/yPvNM8jXH3XNhWMp7k=
     refresh: tFlD6u6wpYbtI0KWpVqLxX3CC4t2+YELUSxWYSdtSxk=
 eureka:
   client:

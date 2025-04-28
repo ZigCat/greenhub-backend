@@ -253,4 +253,13 @@ public class ArticleService {
                     );
                 });
     }
+
+    @Transactional
+    public Mono<Void> delete(Long userId){
+        return repository.findAllByCreator(userId)
+                .flatMap(model -> Mono.when(
+                    repository.delete(model.getId()),
+                    contentRepository.delete(model.getId())
+                )).then();
+    }
 }

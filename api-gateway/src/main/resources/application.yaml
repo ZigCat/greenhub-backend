@@ -8,8 +8,6 @@ eureka:
   instance:
     prefer-ip-address: true
 spring:
-  kafka:
-    bootstrap-servers: 172.18.173.155:9092
   application:
     name: api-gateway
 greenhub:
@@ -38,7 +36,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: "health,info"
   endpoint:
     health:
       show-details: "always"

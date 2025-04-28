@@ -14,4 +14,9 @@ public class InfrastructureDTO {
             String role,
             String scopes
     ){}
+
+    public record ApiError(
+            String message,
+            int statusCode
+    ){}
 }

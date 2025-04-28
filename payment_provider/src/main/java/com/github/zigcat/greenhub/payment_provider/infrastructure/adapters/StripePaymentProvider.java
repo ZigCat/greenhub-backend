@@ -6,9 +6,10 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.Subscription;
+import com.stripe.model.checkout.Session;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerSearchParams;
-import com.stripe.param.SubscriptionCreateParams;
+import com.stripe.param.checkout.SessionCreateParams;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -18,11 +19,8 @@ import java.util.List;
 
 @Component
 public class StripePaymentProvider implements PaymentProvider {
-    @Value("${stripe.key.secret}")
-    private String STRIPE_API_KEY;
-
-    public StripePaymentProvider() {
-        Stripe.apiKey = STRIPE_API_KEY;
+    public StripePaymentProvider(@Value("${stripe.key.secret}") String apiKey) {
+        Stripe.apiKey = apiKey;
     }
 
     private Mono<String> getOrCreateCustomer(String userEmail) {
@@ -56,11 +54,20 @@ public class StripePaymentProvider implements PaymentProvider {
         return getOrCreateCustomer(email)
                 .flatMap(customerId ->
                         Mono.fromCallable(() -> {
-                            SubscriptionCreateParams params = SubscriptionCreateParams.builder()
+                            SessionCreateParams params = SessionCreateParams.builder()
+                                    .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
                                     .setCustomer(customerId)
-                                    .addItem(SubscriptionCreateParams.Item.builder().setPrice(planId).build())
+                                    .setSuccessUrl("https://github.com")
+                                    .setCancelUrl("https://google.com")
+                                    .addLineItem(
+                                            SessionCreateParams.LineItem.builder()
+                                                    .setQuantity(1L)
+                                                    .setPrice(planId)
+                                                    .build()
+                                    )
                                     .build();
-                            return Subscription.create(params).getId();
+                            Session session = Session.create(params);
+                            return session.getUrl();
                         })
                 ).subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(e ->
@@ -76,11 +83,11 @@ public class StripePaymentProvider implements PaymentProvider {
             subscription.cancel();
             return Mono.empty();
         })
-                .subscribeOn(Schedulers.boundedElastic())
-                .onErrorResume(e ->
-                        Mono.error(new SourceInfrastructureException(
-                        "Stripe services are unavailable"
-                        )))
-                .then();
+        .subscribeOn(Schedulers.boundedElastic())
+        .onErrorResume(e ->
+                Mono.error(new SourceInfrastructureException(
+                "Stripe services are unavailable"
+                )))
+        .then();
     }
 }

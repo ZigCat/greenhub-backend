@@ -49,6 +49,18 @@ public class R2dbcArticleRepository implements ArticleRepository {
     }
 
     @Override
+    public Flux<ArticleModel> findAllByCreator(Long creator) {
+        return repository.findAllByCreator(creator)
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found article with this creator");
+                    }
+                    throw new DatabaseException("Article service unavailable");
+                });
+    }
+
+    @Override
     public Mono<ArticleModel> findById(Long id) {
         return repository
                 .findById(id)

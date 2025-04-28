@@ -12,16 +12,4 @@ public class InfrastructureDTO {
             String role,
             String scopes
     ){}
-
-    public record UserRegister(
-            String fname,
-            String lname,
-            String email,
-            String password
-    ){}
-
-    public record UserLogin(
-            String username,
-            String password
-    ){}
 }

@@ -59,22 +59,6 @@ public class UserMapper {
         );
     }
 
-    public static AppUser toEntity(InfrastructureDTO.UserRegister dto){
-        return new AppUser(
-                dto.fname(),
-                dto.lname(),
-                dto.email(),
-                dto.password()
-        );
-    }
-
-    public static AppUser toEntity(InfrastructureDTO.UserLogin dto){
-        return new AppUser(
-                dto.username(),
-                dto.password()
-        );
-    }
-
     public static UserModel toModel(AppUser entity){
         return new UserModel(
                 entity.getId(),

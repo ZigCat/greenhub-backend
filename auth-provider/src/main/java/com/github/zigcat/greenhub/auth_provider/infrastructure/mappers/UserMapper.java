@@ -12,20 +12,4 @@ public class UserMapper {
                 user.getPassword()
         );
     }
-
-    public static InfrastructureDTO.UserLogin toLoginDTO(AppUser user){
-        return new InfrastructureDTO.UserLogin(
-                user.getEmail(),
-                user.getPassword()
-        );
-    }
-
-    public static InfrastructureDTO.UserAuth toAuthDTO(AppUser user){
-        return new InfrastructureDTO.UserAuth(
-                user.getId(),
-                user.getEmail(),
-                user.getRole().toString(),
-                user.getScopes()
-        );
-    }
 }

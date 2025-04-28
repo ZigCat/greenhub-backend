@@ -1,9 +1,6 @@
 server:
   port: 8082
-
 spring:
-  kafka:
-    bootstrap-servers: 172.18.173.155:9092
   application:
     name: user-provider
   r2dbc:
