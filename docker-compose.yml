@@ -211,6 +211,8 @@ services:
       - "3000:3000"
     networks:
       - backend
+    env_file:
+      - ../green-insight/.env
     depends_on:
       api-gateway:
         condition: service_healthy
