@@ -97,7 +97,6 @@ services:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       GREENHUB_GATEWAY_AUTH: http://auth-provider:8081
       GREENHUB_GATEWAY_USER: http://user-provider:8082
       GREENHUB_GATEWAY_MAIN: http://article-provider:8083
@@ -125,7 +124,6 @@ services:
       redis:
         condition: service_healthy
     environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -158,7 +156,6 @@ services:
       auth-provider:
         condition: service_healthy
     environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -204,6 +201,19 @@ services:
       - "8083:8083"
     networks:
       - backend
+
+  frontend:
+    build: ../green-insight
+    image: greenhub/frontend:latest
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+    depends_on:
+      api-gateway:
+        condition: service_healthy
 
 networks:
   backend:
