@@ -6,5 +6,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ReactiveSubscriptionRepository extends ReactiveCrudRepository<SubscriptionModel, Long> {
-    Flux<SubscriptionModel> findAllByUserId(Long userId);
+    Mono<SubscriptionModel> findByUserId(Long userId);
+    Mono<SubscriptionModel> findByProviderCustomerId(String providerCustomerId);
+    Mono<SubscriptionModel> findByProviderSessionId(String providerSessionId);
+    Mono<SubscriptionModel> findByProviderSubscriptionId(String providerSubscriptionId);
 }

@@ -45,12 +45,48 @@ public class R2dbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
-    public Flux<SubscriptionModel> findByUserId(Long userId) {
-        return repository.findAllByUserId(userId)
+    public Mono<SubscriptionModel> findByUserId(Long userId) {
+        return repository.findByUserId(userId)
                 .onErrorMap(e -> {
                     log.error(e.getMessage());
                     if(e instanceof EmptyResultDataAccessException){
-                        throw new NotFoundInfrastructureException("Couldn't found Subscription by this user");
+                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
+                    }
+                    throw new SourceInfrastructureException("Payment service unavailable");
+                });
+    }
+
+    @Override
+    public Mono<SubscriptionModel> findBySessionId(String sessionId) {
+        return repository.findByProviderSessionId(sessionId)
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
+                    }
+                    throw new SourceInfrastructureException("Payment service unavailable");
+                });
+    }
+
+    @Override
+    public Mono<SubscriptionModel> findByProviderSubId(String subscriptionId) {
+        return repository.findByProviderSubscriptionId(subscriptionId)
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
+                    }
+                    throw new SourceInfrastructureException("Payment service unavailable");
+                });
+    }
+
+    @Override
+    public Mono<SubscriptionModel> findByCustomerId(String customerId) {
+        return repository.findByProviderCustomerId(customerId)
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
+                    if(e instanceof EmptyResultDataAccessException){
+                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
                     }
                     throw new SourceInfrastructureException("Payment service unavailable");
                 });

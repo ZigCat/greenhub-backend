@@ -11,6 +11,8 @@ public class SubscriptionMapper {
                 model.getPlanId(),
                 model.getProvider(),
                 model.getProviderSubscriptionId(),
+                model.getProviderCustomerId(),
+                model.getProviderSessionId(),
                 model.getStatus(),
                 model.getStartDate(),
                 model.getEndDate()
@@ -19,7 +21,16 @@ public class SubscriptionMapper {
 
     public static SubscriptionModel toModel(Subscription entity){
         return new SubscriptionModel(
-                en
-        )
+                entity.getId(),
+                entity.getUserId(),
+                entity.getPlanId(),
+                entity.getProvider(),
+                entity.getProviderSubscriptionId(),
+                entity.getProviderCustomerId(),
+                entity.getProviderSessionId(),
+                entity.getStatus(),
+                entity.getStartDate(),
+                entity.getEndDate()
+        );
     }
 }

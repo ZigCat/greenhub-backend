@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum SubscriptionStatus {
     ACTIVE("ACTIVE"),
     CANCELED("CANCELED"),
-    EXPIRED("EXPIRED");
+    EXPIRED("EXPIRED"),
+    PENDING("PENDING");
     private String value;
 
     SubscriptionStatus(String value) {

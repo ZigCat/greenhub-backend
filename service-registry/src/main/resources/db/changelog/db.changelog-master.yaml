@@ -254,7 +254,7 @@ databaseChangeLog:
                   name: provider_subscription_id
                   type: varchar(255)
                   constraints:
-                    nullable: false
+                    nullable: true
               - column:
                   name: status
                   type: varchar(100)
@@ -266,12 +266,12 @@ databaseChangeLog:
                   type: timestamp
                   defaultValue: NOW()
                   constraints:
-                    nullable: false
+                    nullable: true
               - column:
                   name: end_date
                   type: timestamp
                   constraints:
-                    nullable: false
+                    nullable: true
         - addForeignKeyConstraint:
             baseTableName: user_subscriptions
             baseColumnNames: user_id
@@ -550,3 +550,20 @@ databaseChangeLog:
               - column:
                   name: private_key
                   value: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDAGPLYJ6s1xw2RXtKpXsL+AAEkHJXSP6Mzv1avf25fcbPDufIkkPBVqPsPIjbIu3a8ON4+eoIFD1OnyxneoTb03TZP73UsG5YYJEnxYsgaCGatj8CRfOWJL00q3h04d8SMRfzTeHyLBLL6ecr54AOGd2ajG5IovKUpPotPIAmgQw3GEKvQ63Po6Y7RXFRDsEVz4n92hnbHE4iRGZ7/YRmjJ1jB6YoO58IvLBMKTXCPzimBt4wzmWJ1LBw/QIUAjN/r0OchGrjHGYH/qvvzDv/yrDxmsSrkpPuzP73+kR2iQwVgZtfIwHRyQjgGTcyPjzfXIaa6kghIkh4ADOQukYyjAgMBAAECggEAfsz5H+2veiQWtKqe6+X9WKSwHCIyU0JmfDYFBntbY+0t+Di5uaFiw2hzsJ2pA/+adMwlB6DeSnC/i7bpMKfCGwgaXdF2ytK61Ny/YnMOGwEIpfCJ8H89FL0Adxd+ulN0jhN0vDKAI1PKwMO8VAymxw/x1CDS7cj4TK1YT7aaJAp6PBxk49Kf+KIiRD93EmDn4sUGUoZpNPpJMjjSKhM2zTY+cB+Z4Orf7dsWmLHGLwbFVdkVW804F6xvvJmQP1QqgzVCsxMdS3bvFYC+Aq8917WxmHlrnN+c29XuNyDcot7qa+p7wV4ObhPscolTXlpYv4TVOqrqk01crXfrpCV/YQKBgQDfIJ4Ka+xEfSelit4+vhc4CQKX2a8Q7sfDxjERf38QhXZPApxIu9GJeBQyJkKnlw5Z8UWJGxLO/4xce6dFHUa1dXZD3SPCCPeWWGaGO8g0pouUQolRDjah7W0Tue3Fc86SyKAcAKEomOARBu0fDnbyJFgzmm4vXFj+9dBZzRJb7wKBgQDcZgSgTeuug5TfRa1uBCRpsDN63x2JPIVxEN4Qc/32RX/sVYdIwQ6YMvHiVgPVHC3Ih8R8Z0+Erv+83r3K1Ixi5bP1zb3qOq/iEGoNTqrxOWgcfoNWkb4un8RzUmVyVt0WtarNy83erbJhqbnhv2jyoFyVSRb2i6WClS5Crne2jQKBgCXc0hSwpaIlnsGvo/D/rs76cG82KEf2TP3CtvbiLLyv+RiFN+H7xR3Pu5Wa+nqX3n6Su5r9dh6cLMRQ01yeEC6gpRX1A6lcfi8MBzHGGT4d+NeKxuRzRgAKWxUa2udDtI0h8FFwJejOsE8TXs+DU9nZIwJ2tTXiNNPnAJkMfI4PAoGAElvBGOVEs3Wsaeiw6JAZxF/z+dEp8auD5gYkqTQwPFpPrIz3Rt0l7RGZSmQlz5OYULLWcBJe8ktta/sVzhZkVzyQ//GSVzdqPSdm3hLmdE9216DGKejb8aBHSd/cKWkI44JgZuIKFPlc+XucyywZftRSwfCjpAe/0p/Aibdkq2UCgYEArE3Ynxe9VO+DRHrQSG3g2lh2tmefd8mRBY4LmHKKguqIpfchTVZMhTNaEzuNhummpFfl6uX+xw9DNqR22OBj3kjnVAXgcjYSeDhIJFi3dmfiJOcPIZjksjgYEPt7rUmhMhQmgLtsmBf/FurO8RckZF6OwrykyP+lQ79ke0snvkI="
+  - changeSet:
+      id: 011-alter-subscription
+      author: ZigCat
+      changes:
+        - addColumn:
+            tableName: user_subscriptions
+            columns:
+              - column:
+                  name: provider_customer_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider_session_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false

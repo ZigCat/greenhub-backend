@@ -1,40 +1,46 @@
 package com.github.zigcat.greenhub.payment_provider.application.usecases;
 
-import com.github.zigcat.greenhub.payment_provider.application.exceptions.ForbiddenAppException;
-import com.github.zigcat.greenhub.payment_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.payment_provider.domain.Subscription;
-import com.github.zigcat.greenhub.payment_provider.domain.interfaces.PaymentProvider;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.SubscriptionRepository;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import com.github.zigcat.greenhub.payment_provider.infrastructure.mappers.SubscriptionMapper;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.Map;
+import reactor.core.publisher.Mono;
 
 @Service
 public class SubscriptionService {
-    private final List<PaymentProvider> providers;
     private final SubscriptionRepository repository;
-    private final PermissionService permissions;
 
-    public SubscriptionService(List<PaymentProvider> providers, SubscriptionRepository repository, PermissionService permissions) {
-        this.providers = providers;
+    public SubscriptionService(SubscriptionRepository repository) {
         this.repository = repository;
-        this.permissions = permissions;
     }
 
-    public Flux<Subscription> list(ServerHttpRequest request, Long userId){
-        AuthorizationData auth = permissions.extractAuthData(request);
-        if(!permissions.canViewPayments(auth)) return Flux.error(new ForbiddenAppException("Access denied"));
-        if(auth.isAdmin()){
-            if(userId != null){
-                return repository.findByUserId(userId)
-                        .
-            }
+    public Flux<Subscription> list(){
+        return repository.findAll().map(SubscriptionMapper::toEntity);
+    }
 
-        } else {
+    public Mono<Subscription> retrieve(Long id){
+        return repository.findById(id).map(SubscriptionMapper::toEntity);
+    }
 
-        }
+    public Mono<Subscription> retrieveBySessionId(String sessionId){
+        return repository.findBySessionId(sessionId).map(SubscriptionMapper::toEntity);
+    }
+
+    public Mono<Subscription> retrieveBySubscriptionId(String subscriptionId){
+        return repository.findByProviderSubId(subscriptionId).map(SubscriptionMapper::toEntity);
+    }
+
+    public Mono<Subscription> retrieveByCustomerId(String customerId){
+        return repository.findByCustomerId(customerId).map(SubscriptionMapper::toEntity);
+    }
+
+    public Mono<Subscription> save(Subscription subscription){
+        return repository.save(SubscriptionMapper.toModel(subscription))
+                .map(SubscriptionMapper::toEntity);
+    }
+
+    public Mono<Void> delete(Long id){
+        return repository.delete(id);
     }
 }

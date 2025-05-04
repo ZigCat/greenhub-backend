@@ -17,7 +17,18 @@ public class Subscription {
     private Long planId;
     private ProviderName provider;
     private String providerSubscriptionId;
+    private String providerCustomerId;
+    private String providerSessionId;
     private SubscriptionStatus status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+
+    public Subscription(Long userId, Long planId, ProviderName provider, String providerCustomerId, String providerSessionId, SubscriptionStatus status) {
+        this.userId = userId;
+        this.planId = planId;
+        this.provider = provider;
+        this.providerCustomerId = providerCustomerId;
+        this.providerSessionId = providerSessionId;
+        this.status = status;
+    }
 }

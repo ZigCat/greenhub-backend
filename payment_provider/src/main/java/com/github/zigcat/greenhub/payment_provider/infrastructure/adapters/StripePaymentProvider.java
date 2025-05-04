@@ -1,6 +1,8 @@
 package com.github.zigcat.greenhub.payment_provider.infrastructure.adapters;
 
+import com.github.zigcat.greenhub.payment_provider.domain.PaymentSession;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.PaymentProvider;
+import com.github.zigcat.greenhub.payment_provider.domain.schemas.ProviderName;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.SourceInfrastructureException;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -45,20 +47,20 @@ public class StripePaymentProvider implements PaymentProvider {
     }
 
     @Override
-    public String getName() {
-        return "stripe";
+    public ProviderName getName() {
+        return ProviderName.STRIPE;
     }
 
     @Override
-    public Mono<String> createSubscription(String email, String planId) {
+    public Mono<PaymentSession> createSubscription(String email, String planId) {
         return getOrCreateCustomer(email)
                 .flatMap(customerId ->
                         Mono.fromCallable(() -> {
                             SessionCreateParams params = SessionCreateParams.builder()
                                     .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
                                     .setCustomer(customerId)
-                                    .setSuccessUrl("https://github.com")
-                                    .setCancelUrl("https://google.com")
+                                    .setSuccessUrl("http://green-insight.space")
+                                    .setCancelUrl("http://green-insight.space/user/1")
                                     .addLineItem(
                                             SessionCreateParams.LineItem.builder()
                                                     .setQuantity(1L)
@@ -67,13 +69,10 @@ public class StripePaymentProvider implements PaymentProvider {
                                     )
                                     .build();
                             Session session = Session.create(params);
-                            return session.getUrl();
+                            return new PaymentSession(session.getId(), session.getCustomer(), session.getUrl());
                         })
                 ).subscribeOn(Schedulers.boundedElastic())
-                .onErrorResume(e ->
-                        Mono.error(new SourceInfrastructureException(
-                                "Stripe services are unavailable"
-                        )));
+                .onErrorResume(e -> Mono.error(new SourceInfrastructureException("Stripe services are unavailable")));
     }
 
     @Override

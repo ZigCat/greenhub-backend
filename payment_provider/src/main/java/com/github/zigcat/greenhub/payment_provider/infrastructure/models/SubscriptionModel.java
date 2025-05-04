@@ -27,19 +27,14 @@ public class SubscriptionModel {
     private ProviderName provider;
     @Column("provider_subscription_id")
     private String providerSubscriptionId;
+    @Column("provider_customer_id")
+    private String providerCustomerId;
+    @Column("provider_session_id")
+    private String providerSessionId;
     @Column("status")
     private SubscriptionStatus status;
     @Column("start_date")
     private LocalDateTime startDate;
     @Column("end_date")
     private LocalDateTime endDate;
-
-    public SubscriptionModel(Long userId, Long planId, ProviderName provider, String providerSubscriptionId, SubscriptionStatus status, LocalDateTime endDate) {
-        this.userId = userId;
-        this.planId = planId;
-        this.provider = provider;
-        this.providerSubscriptionId = providerSubscriptionId;
-        this.status = status;
-        this.endDate = endDate;
-    }
 }
