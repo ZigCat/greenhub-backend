@@ -37,3 +37,6 @@ springdoc:
     operationsSorter: method
     enabled: true
     path: /swagger-ui.html
+greenhub:
+  common-security:
+    api-key: smth-key-001
