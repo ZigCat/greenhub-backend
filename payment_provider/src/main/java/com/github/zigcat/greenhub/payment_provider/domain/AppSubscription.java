@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Subscription {
+public class AppSubscription {
     private Long id;
     private Long userId;
     private Long planId;
@@ -23,12 +23,22 @@ public class Subscription {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
 
-    public Subscription(Long userId, Long planId, ProviderName provider, String providerCustomerId, String providerSessionId, SubscriptionStatus status) {
+    public AppSubscription(Long userId, Long planId, ProviderName provider, String providerCustomerId, String providerSessionId, SubscriptionStatus status) {
         this.userId = userId;
         this.planId = planId;
         this.provider = provider;
         this.providerCustomerId = providerCustomerId;
         this.providerSessionId = providerSessionId;
         this.status = status;
+    }
+
+    public AppSubscription(ProviderName provider, String providerSubscriptionId, String providerCustomerId, String providerSessionId, SubscriptionStatus status, LocalDateTime startDate, LocalDateTime endDate) {
+        this.provider = provider;
+        this.providerSubscriptionId = providerSubscriptionId;
+        this.providerCustomerId = providerCustomerId;
+        this.providerSessionId = providerSessionId;
+        this.status = status;
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
 }

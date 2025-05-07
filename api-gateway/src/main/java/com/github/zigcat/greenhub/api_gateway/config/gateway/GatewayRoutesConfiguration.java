@@ -17,7 +17,8 @@ public class GatewayRoutesConfiguration {
     private String USER_URL;
     @Value("${greenhub.gateway.main}")
     private String MAIN_URL;
-    
+    @Value("${greenhub.gateway.payment}")
+    private String PAYMENT_URL;
 
     public GatewayRoutesConfiguration(GatewayJwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
@@ -60,6 +61,18 @@ public class GatewayRoutesConfiguration {
                         .filters(f -> f.stripPrefix(1))
                         .uri(MAIN_URL))
 
+                .route("payment-protected", r -> r.path("/payment/protected/**")
+                        .filters(f -> f.filter(jwtFilter.apply(new GatewayJwtFilter.Config()))
+                                .addRequestHeader("X-Request-Source", "Gateway")
+                                .stripPrefix(1))
+                        .uri(PAYMENT_URL))
+                .route("payment-webhook", r -> r.path("/payment/webhook/**")
+                        .filters(f -> f.addRequestHeader("X-Request-Source", "Gateway")
+                                .stripPrefix(1))
+                        .uri(PAYMENT_URL))
+                .route("payment-docs", r -> r.path("/payment/v3/api-docs")
+                        .filters(f -> f.stripPrefix(1))
+                        .uri(PAYMENT_URL))
                 .build();
     }
 }

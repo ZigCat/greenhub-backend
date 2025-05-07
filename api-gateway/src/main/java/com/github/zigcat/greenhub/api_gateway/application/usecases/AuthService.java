@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
-@Slf4j
 public class AuthService {
     private final AuthRepository authorization;
 
@@ -18,7 +17,6 @@ public class AuthService {
     }
 
     public Mono<AppUser> authorizeByToken(String token) {
-        log.info("Preparing token {} to share via Kafka", token);
         return authorization.authorize(new InfrastructureDTO.JwtDTO(token, TokenType.ACCESS));
     }
 }

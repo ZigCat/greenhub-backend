@@ -15,8 +15,8 @@ public class StripeWebhookController {
         this.service = service;
     }
 
-    @PostMapping
-    public Mono<ResponseEntity<String>> handleWebhook(@RequestBody String payload,
+    @PostMapping("/subscription")
+    public Mono<ResponseEntity<String>> handleSubscriptionWebhook(@RequestBody String payload,
                                               ServerHttpRequest request) {
         return service.handleStripeWebhook(request, payload)
                 .map(ResponseEntity::ok);

@@ -4,13 +4,14 @@ import com.github.zigcat.greenhub.payment_provider.infrastructure.models.Subscri
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 public interface SubscriptionRepository {
     Flux<SubscriptionModel> findAll();
     Mono<SubscriptionModel> findById(Long id);
-    Mono<SubscriptionModel> findByUserId(Long userId);
-    Mono<SubscriptionModel> findBySessionId(String sessionId);
-    Mono<SubscriptionModel> findByProviderSubId(String subscriptionId);
-    Mono<SubscriptionModel> findByCustomerId(String customerId);
+    Flux<SubscriptionModel> findByUserId(Long userId);
+    Mono<SubscriptionModel> findByProviderSessionId(String sessionId);
+    Mono<Integer> expireOldPendingSubscriptions(LocalDateTime cutoff);
     Mono<SubscriptionModel> save(SubscriptionModel model);
     Mono<Void> delete(Long id);
 }

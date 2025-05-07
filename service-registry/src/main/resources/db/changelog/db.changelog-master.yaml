@@ -254,7 +254,7 @@ databaseChangeLog:
                   name: provider_subscription_id
                   type: varchar(255)
                   constraints:
-                    nullable: true
+                    nullable: false
               - column:
                   name: status
                   type: varchar(100)
@@ -266,12 +266,12 @@ databaseChangeLog:
                   type: timestamp
                   defaultValue: NOW()
                   constraints:
-                    nullable: true
+                    nullable: false
               - column:
                   name: end_date
                   type: timestamp
                   constraints:
-                    nullable: true
+                    nullable: false
         - addForeignKeyConstraint:
             baseTableName: user_subscriptions
             baseColumnNames: user_id
@@ -567,3 +567,35 @@ databaseChangeLog:
                   type: varchar(255)
                   constraints:
                     nullable: false
+  - changeSet:
+      id: 012-constraint-payment
+      author: ZigCat
+      changes:
+        - dropNotNullConstraint:
+            columnName: start_date
+            tableName: user_subscriptions
+        - dropDefaultValue:
+            columnName: start_date
+            tableName: user_subscriptions
+        - dropNotNullConstraint:
+            columnName: end_date
+            tableName: user_subscriptions
+        - dropNotNullConstraint:
+            columnName: provider_subscription_id
+            tableName: user_subscriptions
+  - changeSet:
+      id: 013-alter-subscription
+      author: ZigCat
+      changes:
+        - addColumn:
+            tableName: user_subscriptions
+            columns:
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValue: NOW()
+                  constraints:
+                    nullable: false
+        - dropDefaultValue:
+            columnName: status
+            tableName: user_subscriptions

@@ -41,14 +41,15 @@ public class GatewayJwtFilter implements GatewayFilterFactory<GatewayJwtFilter.C
                 return chain.filter(exchange);
             }
             if (!validateAuthHeader(authHeader)) {
-                return this.onError(exchange, 400, "JWT token is wrong or missing");
+                return this.onError(exchange, 401, "JWT token is wrong or missing");
             }
             String token = extractToken(authHeader);
-            log.info("Token is valid "+token);
+            log.info("Token is valid");
             return authService.authorizeByToken(token)
                     .flatMap(response -> {
+                        log.info("Auth: {}", response);
                         exchange.getRequest().mutate().header("X-User-Id", response.getId().toString());
-                        exchange.getRequest().mutate().header("X-Username", response.getUsername());
+                        exchange.getRequest().mutate().header("X-Username", response.getEmail());
                         exchange.getRequest().mutate().header("X-User-Scopes", response.getScopes());
                         exchange.getRequest().mutate().header("X-User-Role", response.getRole().toString());
                         return chain.filter(exchange);

@@ -1,11 +1,11 @@
 package com.github.zigcat.greenhub.payment_provider.infrastructure.mappers;
 
-import com.github.zigcat.greenhub.payment_provider.domain.Subscription;
+import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.models.SubscriptionModel;
 
 public class SubscriptionMapper {
-    public static Subscription toEntity(SubscriptionModel model){
-        return new Subscription(
+    public static AppSubscription toEntity(SubscriptionModel model){
+        return new AppSubscription(
                 model.getId(),
                 model.getUserId(),
                 model.getPlanId(),
@@ -19,7 +19,7 @@ public class SubscriptionMapper {
         );
     }
 
-    public static SubscriptionModel toModel(Subscription entity){
+    public static SubscriptionModel toModel(AppSubscription entity){
         return new SubscriptionModel(
                 entity.getId(),
                 entity.getUserId(),

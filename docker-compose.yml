@@ -100,6 +100,7 @@ services:
       GREENHUB_GATEWAY_AUTH: http://auth-provider:8081
       GREENHUB_GATEWAY_USER: http://user-provider:8082
       GREENHUB_GATEWAY_MAIN: http://article-provider:8083
+      GREENHUB_GATEWAY_PAYMENT: http://payment-provider:8084
     ports:
       - "8080:8080"
     networks:
@@ -199,6 +200,37 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
     ports:
       - "8083:8083"
+    networks:
+      - backend
+
+  payment-provider:
+    build: ./payment_provider
+    image: greenhub-backend/payment-provider:latest
+    container_name: payment-provider
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+      api-gateway:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB_HOST: postgres:5432
+      STRIPE_PUBLIC: ${STRIPE_PUBLIC}
+      STRIPE_SECRET: ${STRIPE_SECRET}
+      STRIPE_WEBHOOK: ${STRIPE_WEBHOOK}
+    ports:
+      - "8084:8084"
     networks:
       - backend
 

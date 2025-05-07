@@ -1,13 +1,21 @@
 package com.github.zigcat.greenhub.payment_provider.application.usecases;
 
-import com.github.zigcat.greenhub.payment_provider.domain.Subscription;
+import com.github.zigcat.greenhub.payment_provider.application.exceptions.ConflictAppException;
+import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.SubscriptionRepository;
+import com.github.zigcat.greenhub.payment_provider.domain.schemas.SubscriptionStatus;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.mappers.SubscriptionMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @Service
+@Slf4j
 public class SubscriptionService {
     private final SubscriptionRepository repository;
 
@@ -15,32 +23,64 @@ public class SubscriptionService {
         this.repository = repository;
     }
 
-    public Flux<Subscription> list(){
+    public Flux<AppSubscription> list(){
         return repository.findAll().map(SubscriptionMapper::toEntity);
     }
 
-    public Mono<Subscription> retrieve(Long id){
+    public Mono<AppSubscription> retrieve(Long id){
         return repository.findById(id).map(SubscriptionMapper::toEntity);
     }
 
-    public Mono<Subscription> retrieveBySessionId(String sessionId){
-        return repository.findBySessionId(sessionId).map(SubscriptionMapper::toEntity);
+    public Flux<AppSubscription> retrieveByUserId(Long userId){
+        return repository.findByUserId(userId).map(SubscriptionMapper::toEntity);
     }
 
-    public Mono<Subscription> retrieveBySubscriptionId(String subscriptionId){
-        return repository.findByProviderSubId(subscriptionId).map(SubscriptionMapper::toEntity);
+    public Mono<AppSubscription> retrieveBySessionId(String subId){
+        return repository.findByProviderSessionId(subId).map(SubscriptionMapper::toEntity);
     }
 
-    public Mono<Subscription> retrieveByCustomerId(String customerId){
-        return repository.findByCustomerId(customerId).map(SubscriptionMapper::toEntity);
-    }
-
-    public Mono<Subscription> save(Subscription subscription){
+    public Mono<AppSubscription> save(AppSubscription subscription){
         return repository.save(SubscriptionMapper.toModel(subscription))
                 .map(SubscriptionMapper::toEntity);
     }
 
+    public Mono<AppSubscription> create(AppSubscription subscription) {
+        return repository.findByUserId(subscription.getUserId())
+            .collectList()
+            .flatMap(subs -> {
+                if (!subs.isEmpty()) {
+                    boolean hasActiveOrPending = subs.stream()
+                            .anyMatch(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
+                                    || sub.getStatus() == SubscriptionStatus.PENDING);
+                    if (hasActiveOrPending) {
+                        return Mono.error(new ConflictAppException("Active subscription already exists"));
+                    }
+                }
+                return repository.save(SubscriptionMapper.toModel(subscription))
+                        .map(SubscriptionMapper::toEntity)
+                        .doOnNext(saved -> log.info("New subscription saved: {}", saved))
+                        .doOnError(e -> log.error("Error saving new subscription: {}", e.getMessage()));
+            });
+    }
+
+
     public Mono<Void> delete(Long id){
         return repository.delete(id);
+    }
+
+    @Scheduled(fixedRate = 300000)
+    public void schedulePendingExpiration() {
+        log.info("Executing scheduled task for pending subscriptions expiration");
+        expirePendingSubscriptions(Duration.ofMinutes(10))
+                .subscribe(
+                        null,
+                        error -> log.error("Error in scheduled task: {}", error.getMessage())
+                );
+    }
+
+    private Mono<Void> expirePendingSubscriptions(Duration pendingLifetime) {
+        LocalDateTime cutoff = LocalDateTime.now().minus(pendingLifetime);
+        return repository.expireOldPendingSubscriptions(cutoff)
+                .then();
     }
 }

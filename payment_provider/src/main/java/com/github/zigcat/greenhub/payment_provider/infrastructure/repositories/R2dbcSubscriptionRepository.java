@@ -14,6 +14,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 @Repository
 @Slf4j
 public class R2dbcSubscriptionRepository implements SubscriptionRepository {
@@ -45,8 +47,8 @@ public class R2dbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
-    public Mono<SubscriptionModel> findByUserId(Long userId) {
-        return repository.findByUserId(userId)
+    public Flux<SubscriptionModel> findByUserId(Long userId) {
+        return repository.findAllByUserId(userId)
                 .onErrorMap(e -> {
                     log.error(e.getMessage());
                     if(e instanceof EmptyResultDataAccessException){
@@ -57,39 +59,20 @@ public class R2dbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
-    public Mono<SubscriptionModel> findBySessionId(String sessionId) {
+    public Mono<SubscriptionModel> findByProviderSessionId(String sessionId) {
         return repository.findByProviderSessionId(sessionId)
                 .onErrorMap(e -> {
                     log.error(e.getMessage());
                     if(e instanceof EmptyResultDataAccessException){
-                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
+                        throw new NotFoundInfrastructureException("Couldn't found Subscription with this ID");
                     }
                     throw new SourceInfrastructureException("Payment service unavailable");
                 });
     }
 
     @Override
-    public Mono<SubscriptionModel> findByProviderSubId(String subscriptionId) {
-        return repository.findByProviderSubscriptionId(subscriptionId)
-                .onErrorMap(e -> {
-                    log.error(e.getMessage());
-                    if(e instanceof EmptyResultDataAccessException){
-                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
-                    }
-                    throw new SourceInfrastructureException("Payment service unavailable");
-                });
-    }
-
-    @Override
-    public Mono<SubscriptionModel> findByCustomerId(String customerId) {
-        return repository.findByProviderCustomerId(customerId)
-                .onErrorMap(e -> {
-                    log.error(e.getMessage());
-                    if(e instanceof EmptyResultDataAccessException){
-                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
-                    }
-                    throw new SourceInfrastructureException("Payment service unavailable");
-                });
+    public Mono<Integer> expireOldPendingSubscriptions(LocalDateTime cutoff) {
+        return repository.expireOldPendingSubscriptions(cutoff);
     }
 
     @Override

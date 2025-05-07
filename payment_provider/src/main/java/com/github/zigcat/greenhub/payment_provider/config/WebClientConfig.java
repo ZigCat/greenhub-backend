@@ -12,9 +12,4 @@ public class WebClientConfig {
     public WebClient.Builder loadBalancedBuilder(){
         return WebClient.builder();
     }
-
-    @Bean
-    public WebClient.Builder externalBuilder(){
-        return WebClient.builder();
-    }
 }
