@@ -100,12 +100,7 @@ public class SessionService {
             .flatMap(activeSub -> {
                 log.info("Canceling subscription {}", activeSub);
                 return provider.cancelSubscription(activeSub.getProviderSubscriptionId())
-                        .then(Mono.defer(() -> {
-                            activeSub.setStatus(SubscriptionStatus.CANCELED);
-                            activeSub.setStartDate(null);
-                            activeSub.setEndDate(LocalDateTime.now());
-                            return subscriptions.save(activeSub);
-                        }));
+                        .then(Mono.just(activeSub));
             });
     }
 
