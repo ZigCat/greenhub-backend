@@ -167,6 +167,7 @@ public class StripePaymentProvider implements PaymentProvider {
             return Mono.error(new BadRequestAppException("Invalid signature"));
         }
         log.info("Event processed, type = {}", event.getType());
+        log.info("Event data: {}", event.getDataObjectDeserializer().getRawJson());
         return Mono.defer(() -> {
             try{
                 switch(event.getType()){
