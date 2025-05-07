@@ -211,40 +211,49 @@ public class StripePaymentProvider implements PaymentProvider {
                     sub.getCustomer(),
                     sessionId,
                     SubscriptionStatus.ACTIVE,
-                    Instant.ofEpochSecond(sub.getStartDate()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
-                    Instant.ofEpochSecond(sub.getEndedAt()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
+                    Instant.ofEpochSecond(sub.getCurrentPeriodStart()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
+                    Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
     private Mono<AppSubscription> handleInvoiceEvent(Event event, SubscriptionStatus status){
         return Mono.fromCallable(() -> {
-            Invoice invoice = (Invoice) event.getDataObjectDeserializer().getObject()
-                    .orElseThrow(() -> new BadRequestInfrastructureException("Deserialization error (Invoice)"));
-            Subscription sub = Subscription.retrieve(invoice.getLines().getData().get(0).getSubscription());
+            String jsonData = event.getDataObjectDeserializer().getRawJson();
+            log.info("Event data: {}", jsonData);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode node = objectMapper.readTree(jsonData);
+            String invoiceId = node.get("id").asText();
+            String subscriptionId = node.get("lines").get("data").get("0").get("subscription").asText();
+            Subscription sub = Subscription.retrieve(subscriptionId);
             return new AppSubscription(
                     ProviderName.STRIPE,
                     sub.getId(),
                     sub.getCustomer(),
-                    null,
+                    invoiceId,
                     status,
-                    Instant.ofEpochSecond(sub.getStartDate()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
-                    Instant.ofEpochSecond(sub.getEndedAt()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
+                    Instant.ofEpochSecond(sub.getCurrentPeriodStart()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
+                    Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
     private Mono<AppSubscription> handleSubscriptionDelete(Event event){
         return Mono.fromCallable(() -> {
-            Subscription subscription = (Subscription) event.getDataObjectDeserializer().getObject()
-                    .orElseThrow(() -> new BadRequestInfrastructureException("Deserialization error (Subscription)"));
-
+            String jsonData = event.getDataObjectDeserializer().getRawJson();
+            log.info("Event data: {}", jsonData);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode node = objectMapper.readTree(jsonData);
+            String subscriptionId = node.get("id").asText();
+            String customerId = node.get("customer").asText();
+            long startDate = node.get("current_period_start").asLong();
+            long endDate = node.get("current_period_end").asLong();
             return new AppSubscription(
                     ProviderName.STRIPE,
-                    subscription.getId(),
-                    subscription.getCustomer(),
+                    subscriptionId,
+                    customerId,
                     null,
                     SubscriptionStatus.CANCELED,
-                    Instant.ofEpochSecond(subscription.getStartDate()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
-                    Instant.ofEpochSecond(subscription.getEndedAt()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime()
+                    Instant.ofEpochSecond(startDate).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
+                    Instant.ofEpochSecond(endDate).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime()
             );
         }).subscribeOn(Schedulers.boundedElastic());
     }
