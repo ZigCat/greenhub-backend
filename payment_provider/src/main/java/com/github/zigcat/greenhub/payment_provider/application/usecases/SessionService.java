@@ -86,6 +86,7 @@ public class SessionService {
         return provider.handleWebhook(request, payload)
             .flatMap(webhookSub -> subscriptions.retrieveBySessionId(webhookSub.getProviderSubscriptionId())
                 .flatMap(subscription -> {
+                    log.info("Setting data: {}", subscription);
                     subscription.setStatus(webhookSub.getStatus());
                     subscription.setProviderSubscriptionId(webhookSub.getProviderSubscriptionId());
                     subscription.setStartDate(webhookSub.getStartDate());
