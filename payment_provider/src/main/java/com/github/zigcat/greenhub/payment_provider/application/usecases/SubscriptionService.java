@@ -46,7 +46,7 @@ public class SubscriptionService {
                     return false;
                 })
                 .singleOrEmpty()
-                .switchIfEmpty(Mono.error(new NotFoundAppException("No such pending subscription")))
+                .switchIfEmpty(Mono.error(new NotFoundAppException("No subscriptions with target statuses")))
                 .map(SubscriptionMapper::toEntity);
     }
 

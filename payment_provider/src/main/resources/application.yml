@@ -18,3 +18,8 @@ stripe:
     public: ${STRIPE_PUBLIC}
     secret: ${STRIPE_SECRET}
     webhook: ${STRIPE_WEBHOOK}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
