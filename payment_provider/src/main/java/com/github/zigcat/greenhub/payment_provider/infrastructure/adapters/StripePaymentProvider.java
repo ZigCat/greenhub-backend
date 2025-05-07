@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.payment_provider.infrastructure.adapters;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.BadRequestAppException;
 import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
@@ -167,7 +168,6 @@ public class StripePaymentProvider implements PaymentProvider {
             return Mono.error(new BadRequestAppException("Invalid signature"));
         }
         log.info("Event processed, type = {}", event.getType());
-        log.info("Event data: {}", event.getDataObjectDeserializer().getRawJson());
         return Mono.defer(() -> {
             try{
                 switch(event.getType()){
@@ -197,14 +197,19 @@ public class StripePaymentProvider implements PaymentProvider {
 
     private Mono<AppSubscription> handleSessionCompleted(Event event) {
         return Mono.fromCallable(() -> {
-            Session session = (Session) event.getDataObjectDeserializer().getObject()
-                    .orElseThrow();
-            Subscription sub = Subscription.retrieve(session.getSubscription());
+            String jsonData = event.getDataObjectDeserializer().getRawJson();
+            log.info("Event data: {}", jsonData);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode node = objectMapper.readTree(jsonData);
+            String sessionId = node.get("id").asText();
+            String subscriptionId = node.get("subscription").asText();
+            log.info("Deserialized : "+sessionId+", "+subscriptionId);
+            Subscription sub = Subscription.retrieve(subscriptionId);
             return new AppSubscription(
                     ProviderName.STRIPE,
                     sub.getId(),
                     sub.getCustomer(),
-                    session.getId(),
+                    sessionId,
                     SubscriptionStatus.ACTIVE,
                     Instant.ofEpochSecond(sub.getStartDate()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
                     Instant.ofEpochSecond(sub.getEndedAt()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
