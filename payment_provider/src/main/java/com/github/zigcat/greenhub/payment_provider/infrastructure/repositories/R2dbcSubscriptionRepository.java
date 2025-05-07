@@ -59,12 +59,12 @@ public class R2dbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
-    public Mono<SubscriptionModel> findByProviderSessionId(String sessionId) {
-        return repository.findByProviderSessionId(sessionId)
+    public Flux<SubscriptionModel> findAllByCustomerId(String id) {
+        return repository.findAllByProviderCustomerId(id)
                 .onErrorMap(e -> {
                     log.error(e.getMessage());
                     if(e instanceof EmptyResultDataAccessException){
-                        throw new NotFoundInfrastructureException("Couldn't found Subscription with this ID");
+                        throw new NotFoundInfrastructureException("Couldn't found Subscription");
                     }
                     throw new SourceInfrastructureException("Payment service unavailable");
                 });

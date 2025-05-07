@@ -1,6 +1,7 @@
 package com.github.zigcat.greenhub.payment_provider.application.usecases;
 
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.ConflictAppException;
+import com.github.zigcat.greenhub.payment_provider.application.exceptions.NotFoundAppException;
 import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.SubscriptionRepository;
 import com.github.zigcat.greenhub.payment_provider.domain.schemas.SubscriptionStatus;
@@ -35,34 +36,33 @@ public class SubscriptionService {
         return repository.findByUserId(userId).map(SubscriptionMapper::toEntity);
     }
 
-    public Mono<AppSubscription> retrieveBySessionId(String subId){
-        return repository.findByProviderSessionId(subId).map(SubscriptionMapper::toEntity);
+    public Mono<AppSubscription> retrieveByCustomerId(String id){
+        return repository.findAllByCustomerId(id)
+                .filter(sub -> sub.getStatus().equals(SubscriptionStatus.PENDING))
+                .singleOrEmpty()
+                .switchIfEmpty(Mono.error(new NotFoundAppException("No such pending subscription")))
+                .map(SubscriptionMapper::toEntity);
     }
 
     public Mono<AppSubscription> save(AppSubscription subscription){
         return repository.save(SubscriptionMapper.toModel(subscription))
-                .map(SubscriptionMapper::toEntity);
+                .map(SubscriptionMapper::toEntity)
+                .doOnNext(saved -> log.info("New subscription saved: {}", saved))
+                .doOnError(e -> log.error("Error saving new subscription: {}", e.getMessage()));
     }
 
-    public Mono<AppSubscription> create(AppSubscription subscription) {
-        return repository.findByUserId(subscription.getUserId())
-            .collectList()
-            .flatMap(subs -> {
-                if (!subs.isEmpty()) {
-                    boolean hasActiveOrPending = subs.stream()
-                            .anyMatch(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
-                                    || sub.getStatus() == SubscriptionStatus.PENDING);
-                    if (hasActiveOrPending) {
-                        return Mono.error(new ConflictAppException("Active subscription already exists"));
+    public Mono<Boolean> hasActiveSubscriptions(Long userId){
+        return repository.findByUserId(userId)
+                .collectList()
+                .map(subs -> {
+                    if (!subs.isEmpty()) {
+                        return subs.stream()
+                                .anyMatch(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
+                                        || sub.getStatus() == SubscriptionStatus.PENDING);
                     }
-                }
-                return repository.save(SubscriptionMapper.toModel(subscription))
-                        .map(SubscriptionMapper::toEntity)
-                        .doOnNext(saved -> log.info("New subscription saved: {}", saved))
-                        .doOnError(e -> log.error("Error saving new subscription: {}", e.getMessage()));
-            });
+                    return false;
+                });
     }
-
 
     public Mono<Void> delete(Long id){
         return repository.delete(id);

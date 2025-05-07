@@ -1,6 +1,7 @@
 package com.github.zigcat.greenhub.payment_provider.application.usecases;
 
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.BadRequestAppException;
+import com.github.zigcat.greenhub.payment_provider.application.exceptions.ConflictAppException;
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.ForbiddenAppException;
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.NotFoundAppException;
 import com.github.zigcat.greenhub.payment_provider.domain.AuthorizationData;
@@ -36,30 +37,34 @@ public class SessionService {
         AuthorizationData auth = permissions.extractAuthData(request);
         log.info("Auth data: {}", auth);
         if(auth.isAdmin()) return Mono.error(new ForbiddenAppException("You're admin, dummy :)"));
-        return plans.retrieve(planId)
-            .flatMap(plan ->
-                provider.createSubscription(
-                    auth.getUsername(),
-                    auth.getId(),
-                    provider.getName() == ProviderName.STRIPE
-                        ? plan.getStripePriceId()
-                        : plan.getPaypalPlanId()
-                ).flatMap(paymentSession -> {
-                    AppSubscription subscription = new AppSubscription(
+        return subscriptions.hasActiveSubscriptions(auth.getId())
+            .map(v -> {
+                if(v) return Mono.error(new ConflictAppException("Active subscription already exists"));
+                return Mono.empty();
+            }).then(plans.retrieve(planId)
+                .flatMap(plan ->
+                    provider.createSubscription(
+                        auth.getUsername(),
                         auth.getId(),
-                        plan.getId(),
-                        provider.getName(),
-                        paymentSession.getProviderCustomerId(),
-                        paymentSession.getProviderSessionId(),
-                        SubscriptionStatus.PENDING
-                    );
-                    return subscriptions.create(subscription)
-                            .map(newSub -> {
-                                log.info("Subscription created: {}", newSub);
-                                return paymentSession;
-                            });
-                })
-            );
+                        provider.getName() == ProviderName.STRIPE
+                            ? plan.getStripePriceId()
+                            : plan.getPaypalPlanId()
+                    ).flatMap(paymentSession -> {
+                        AppSubscription subscription = new AppSubscription(
+                            auth.getId(),
+                            plan.getId(),
+                            provider.getName(),
+                            paymentSession.getProviderCustomerId(),
+                            paymentSession.getProviderSessionId(),
+                            SubscriptionStatus.PENDING
+                        );
+                        return subscriptions.save(subscription)
+                                .map(newSub -> {
+                                    log.info("Subscription created: {}", newSub);
+                                    return paymentSession;
+                                });
+                    })
+                ));
     }
 
     public Mono<AppSubscription> cancelSubscription(ServerHttpRequest request){
@@ -84,8 +89,9 @@ public class SessionService {
     public Mono<String> handleStripeWebhook(ServerHttpRequest request, String payload){
         log.info("Received event from Stripe WebHook");
         return provider.handleWebhook(request, payload)
-            .flatMap(webhookSub -> subscriptions.retrieveBySessionId(webhookSub.getProviderSubscriptionId())
+            .flatMap(webhookSub -> subscriptions.retrieveByCustomerId(webhookSub.getProviderCustomerId())
                 .flatMap(subscription -> {
+                    log.info("Original data: {}", webhookSub);
                     log.info("Setting data: {}", subscription);
                     subscription.setStatus(webhookSub.getStatus());
                     subscription.setProviderSubscriptionId(webhookSub.getProviderSubscriptionId());

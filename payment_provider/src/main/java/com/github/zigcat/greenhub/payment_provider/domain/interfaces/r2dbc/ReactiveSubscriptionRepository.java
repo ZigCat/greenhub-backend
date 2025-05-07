@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 public interface ReactiveSubscriptionRepository extends ReactiveCrudRepository<SubscriptionModel, Long> {
     Flux<SubscriptionModel> findAllByUserId(Long userId);
     Flux<SubscriptionModel> findAllByProviderCustomerId(String providerCustomerId);
-    Mono<SubscriptionModel> findByProviderSessionId(String providerSessionId);
     @Query("UPDATE user_subscriptions SET status = 'EXPIRED' " +
             "WHERE status = 'PENDING' AND created_at < :cutoff")
     Mono<Integer> expireOldPendingSubscriptions(@Param("cutoff") LocalDateTime cutoff);
