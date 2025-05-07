@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -36,9 +37,14 @@ public class SubscriptionService {
         return repository.findByUserId(userId).map(SubscriptionMapper::toEntity);
     }
 
-    public Mono<AppSubscription> retrieveByCustomerId(String id){
+    public Mono<AppSubscription> retrieveByCustomerId(String id, List<SubscriptionStatus> target){
         return repository.findAllByCustomerId(id)
-                .filter(sub -> sub.getStatus().equals(SubscriptionStatus.PENDING))
+                .filter(sub -> {
+                    for(SubscriptionStatus status: target){
+                        if(sub.getStatus().equals(status)) return true;
+                    }
+                    return false;
+                })
                 .singleOrEmpty()
                 .switchIfEmpty(Mono.error(new NotFoundAppException("No such pending subscription")))
                 .map(SubscriptionMapper::toEntity);

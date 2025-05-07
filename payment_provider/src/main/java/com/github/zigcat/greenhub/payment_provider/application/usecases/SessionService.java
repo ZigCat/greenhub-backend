@@ -12,7 +12,10 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.awt.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -109,23 +112,27 @@ public class SessionService {
     public Mono<String> handleStripeWebhook(ServerHttpRequest request, String payload){
         log.info("Received event from Stripe Webhook");
         return provider.handleWebhook(request, payload)
-            .flatMap(webhookSub -> subscriptions.retrieveByCustomerId(webhookSub.getProviderCustomerId())
-                .flatMap(subscription -> {
-                    log.info("Original data: {}", webhookSub);
-                    log.info("Setting data: {}", subscription);
-                    subscription.setStatus(webhookSub.getStatus());
-                    subscription.setProviderSubscriptionId(webhookSub.getProviderSubscriptionId());
-                    subscription.setStartDate(webhookSub.getStartDate());
-                    subscription.setEndDate(webhookSub.getEndDate());
-                    return subscriptions.save(subscription)
-                            .map(saved -> {
-                                log.info("Event processed with data {}", saved);
-                                return "Subscription with ID "
-                                        + saved.getProviderSubscriptionId()
-                                        + " successfully processed, status = "
-                                        + saved.getStatus();
-                            });
-                })
+            .flatMap(webhookSub -> {
+                ArrayList<SubscriptionStatus> target = new ArrayList<>(List.of(SubscriptionStatus.PENDING));
+                if(webhookSub.getStatus() != SubscriptionStatus.ACTIVE) target.add(SubscriptionStatus.ACTIVE);
+                return subscriptions.retrieveByCustomerId(webhookSub.getProviderCustomerId(), target)
+                        .flatMap(subscription -> {
+                            log.info("Original data: {}", webhookSub);
+                            log.info("Setting data: {}", subscription);
+                            subscription.setStatus(webhookSub.getStatus());
+                            subscription.setProviderSubscriptionId(webhookSub.getProviderSubscriptionId());
+                            subscription.setStartDate(webhookSub.getStartDate());
+                            subscription.setEndDate(webhookSub.getEndDate());
+                            return subscriptions.save(subscription)
+                                    .map(saved -> {
+                                        log.info("Event processed with data {}", saved);
+                                        return "Subscription with ID "
+                                                + saved.getProviderSubscriptionId()
+                                                + " successfully processed, status = "
+                                                + saved.getStatus();
+                                    });
+                        });
+                }
             );
     }
 }
