@@ -197,7 +197,7 @@ public class StripePaymentProvider implements PaymentProvider {
     private Mono<AppSubscription> handleSessionCompleted(Event event) {
         return Mono.fromCallable(() -> {
             Session session = (Session) event.getDataObjectDeserializer().getObject()
-                    .orElseThrow(() -> new ServerErrorInfrastructureException("Deserialization failed (Session)"));
+                    .orElseThrow();
             Subscription sub = Subscription.retrieve(session.getSubscription());
             return new AppSubscription(
                     ProviderName.STRIPE,
