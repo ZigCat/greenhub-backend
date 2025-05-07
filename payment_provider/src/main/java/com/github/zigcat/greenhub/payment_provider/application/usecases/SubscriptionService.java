@@ -1,7 +1,7 @@
 package com.github.zigcat.greenhub.payment_provider.application.usecases;
 
-import com.github.zigcat.greenhub.payment_provider.application.exceptions.ConflictAppException;
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.NotFoundAppException;
+import com.github.zigcat.greenhub.payment_provider.application.exceptions.ServerErrorAppException;
 import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.SubscriptionRepository;
 import com.github.zigcat.greenhub.payment_provider.domain.schemas.SubscriptionStatus;
@@ -51,16 +51,14 @@ public class SubscriptionService {
                 .doOnError(e -> log.error("Error saving new subscription: {}", e.getMessage()));
     }
 
-    public Mono<Boolean> hasActiveSubscriptions(Long userId){
+    public Mono<Boolean> hasActiveSubscriptions(Long userId) {
         return repository.findByUserId(userId)
-                .collectList()
-                .map(subs -> {
-                    if (!subs.isEmpty()) {
-                        return subs.stream()
-                                .anyMatch(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
-                                        || sub.getStatus() == SubscriptionStatus.PENDING);
-                    }
-                    return false;
+                .any(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
+                        || sub.getStatus() == SubscriptionStatus.PENDING)
+                .doOnSuccess(hasActive -> log.debug("User {} has active subscriptions: {}", userId, hasActive))
+                .onErrorResume(e -> {
+                    log.error("Error checking active subscriptions for user {}: {}", userId, e.getMessage(), e);
+                    return Mono.error(new ServerErrorAppException("Failed to check active subscriptions"));
                 });
     }
 

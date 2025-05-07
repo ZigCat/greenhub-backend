@@ -1,19 +1,16 @@
 package com.github.zigcat.greenhub.payment_provider.application.usecases;
 
-import com.github.zigcat.greenhub.payment_provider.application.exceptions.BadRequestAppException;
-import com.github.zigcat.greenhub.payment_provider.application.exceptions.ConflictAppException;
-import com.github.zigcat.greenhub.payment_provider.application.exceptions.ForbiddenAppException;
-import com.github.zigcat.greenhub.payment_provider.application.exceptions.NotFoundAppException;
+import com.github.zigcat.greenhub.payment_provider.application.exceptions.*;
 import com.github.zigcat.greenhub.payment_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.PaymentSession;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.PaymentProvider;
-import com.github.zigcat.greenhub.payment_provider.domain.schemas.ProviderName;
 import com.github.zigcat.greenhub.payment_provider.domain.schemas.SubscriptionStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDateTime;
 
@@ -32,39 +29,62 @@ public class SessionService {
         this.provider = provider;
     }
 
-    public Mono<PaymentSession> createSession(ServerHttpRequest request, Long planId){
-        log.info("Creating payment session");
-        AuthorizationData auth = permissions.extractAuthData(request);
-        log.info("Auth data: {}", auth);
-        if(auth.isAdmin()) return Mono.error(new ForbiddenAppException("You're admin, dummy :)"));
-        return subscriptions.hasActiveSubscriptions(auth.getId())
-            .map(v -> {
-                if(v) return Mono.error(new ConflictAppException("Active subscription already exists"));
-                return Mono.empty();
-            }).then(plans.retrieve(planId)
-                .flatMap(plan ->
-                    provider.createSubscription(
-                        auth.getUsername(),
-                        auth.getId(),
-                        provider.getName() == ProviderName.STRIPE
-                            ? plan.getStripePriceId()
-                            : plan.getPaypalPlanId()
-                    ).flatMap(paymentSession -> {
-                        AppSubscription subscription = new AppSubscription(
-                            auth.getId(),
-                            plan.getId(),
-                            provider.getName(),
-                            paymentSession.getProviderCustomerId(),
-                            paymentSession.getProviderSessionId(),
-                            SubscriptionStatus.PENDING
-                        );
-                        return subscriptions.save(subscription)
-                                .map(newSub -> {
-                                    log.info("Subscription created: {}", newSub);
-                                    return paymentSession;
+    public Mono<PaymentSession> createSession(ServerHttpRequest request, Long planId) {
+        log.info("Creating payment session for planId: {}", planId);
+        return Mono.just(permissions.extractAuthData(request))
+                .flatMap(auth -> {
+                    log.info("Auth data: {}", auth);
+                    if (auth.isAdmin()) {
+                        return Mono.error(new ForbiddenAppException("Admins cannot create subscriptions"));
+                    }
+                    return subscriptions.hasActiveSubscriptions(auth.getId())
+                        .flatMap(hasActive -> {
+                            if(hasActive) {
+                                return Mono.error(new ConflictAppException("User already has an active or pending subscription"));
+                            }
+                            return plans.retrieve(planId)
+                                .switchIfEmpty(Mono.error(new NotFoundAppException(
+                                        "Plan with ID " + planId + " not found")))
+                                .flatMap(plan -> {
+                                    String providerPlanId = plan.getStripePriceId();
+                                    if (providerPlanId == null) {
+                                        return Mono.error(new IllegalStateException(
+                                                "Provider plan ID is missing for " + provider.getName()));
+                                    }
+                                    return provider.createSubscription(
+                                            auth.getUsername(),
+                                            auth.getId(),
+                                            providerPlanId
+                                        )
+                                        .switchIfEmpty(Mono.error(new IllegalStateException(
+                                                "Failed to create subscription session")))
+                                        .flatMap(paymentSession -> {
+                                            AppSubscription subscription = new AppSubscription(
+                                                auth.getId(),
+                                                plan.getId(),
+                                                provider.getName(),
+                                                paymentSession.getProviderCustomerId(),
+                                                paymentSession.getProviderSessionId(),
+                                                SubscriptionStatus.PENDING
+                                            );
+                                            return subscriptions.save(subscription)
+                                                .doOnSuccess(newSub ->
+                                                        log.info("Subscription created: {}", newSub))
+                                                .map(newSub -> paymentSession);
+                                        });
                                 });
-                    })
-                ));
+                        });
+                })
+                .onErrorMap(e -> {
+                    if (e instanceof ForbiddenAppException
+                            || e instanceof ConflictAppException
+                            || e instanceof NotFoundAppException) {
+                        return e;
+                    }
+                    log.error("Error creating payment session: {}", e.getMessage(), e);
+                    return new ServerErrorAppException("Failed to create payment session");
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     public Mono<AppSubscription> cancelSubscription(ServerHttpRequest request){
@@ -87,7 +107,7 @@ public class SessionService {
     }
 
     public Mono<String> handleStripeWebhook(ServerHttpRequest request, String payload){
-        log.info("Received event from Stripe WebHook");
+        log.info("Received event from Stripe Webhook");
         return provider.handleWebhook(request, payload)
             .flatMap(webhookSub -> subscriptions.retrieveByCustomerId(webhookSub.getProviderCustomerId())
                 .flatMap(subscription -> {
