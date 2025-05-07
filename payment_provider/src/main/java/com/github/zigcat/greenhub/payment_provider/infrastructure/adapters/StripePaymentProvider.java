@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.payment_provider.infrastructure.adapters;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.BadRequestAppException;
 import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.PaymentSession;
@@ -192,10 +193,11 @@ public class StripePaymentProvider implements PaymentProvider {
             }
         });
     }
+
     private Mono<AppSubscription> handleSessionCompleted(Event event) {
         return Mono.fromCallable(() -> {
             Session session = (Session) event.getDataObjectDeserializer().getObject()
-                    .orElseThrow();
+                    .orElseThrow(() -> new ServerErrorInfrastructureException("Deserialization failed (Session)"));
             Subscription sub = Subscription.retrieve(session.getSubscription());
             return new AppSubscription(
                     ProviderName.STRIPE,
@@ -203,8 +205,8 @@ public class StripePaymentProvider implements PaymentProvider {
                     sub.getCustomer(),
                     session.getId(),
                     SubscriptionStatus.ACTIVE,
-                    Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
-                    Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
+                    Instant.ofEpochSecond(sub.getStartDate()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
+                    Instant.ofEpochSecond(sub.getEndedAt()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -212,15 +214,15 @@ public class StripePaymentProvider implements PaymentProvider {
         return Mono.fromCallable(() -> {
             Invoice invoice = (Invoice) event.getDataObjectDeserializer().getObject()
                     .orElseThrow(() -> new BadRequestInfrastructureException("Deserialization error (Invoice)"));
-            Subscription sub = Subscription.retrieve(invoice.getSubscription());
+            Subscription sub = Subscription.retrieve(invoice.getLines().getData().get(0).getSubscription());
             return new AppSubscription(
                     ProviderName.STRIPE,
                     sub.getId(),
                     sub.getCustomer(),
                     null,
                     status,
-                    Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
-                    Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
+                    Instant.ofEpochSecond(sub.getStartDate()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
+                    Instant.ofEpochSecond(sub.getEndedAt()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -235,8 +237,8 @@ public class StripePaymentProvider implements PaymentProvider {
                     subscription.getCustomer(),
                     null,
                     SubscriptionStatus.CANCELED,
-                    Instant.ofEpochSecond(subscription.getCurrentPeriodStart()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
-                    Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime()
+                    Instant.ofEpochSecond(subscription.getStartDate()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
+                    Instant.ofEpochSecond(subscription.getEndedAt()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime()
             );
         }).subscribeOn(Schedulers.boundedElastic());
     }
