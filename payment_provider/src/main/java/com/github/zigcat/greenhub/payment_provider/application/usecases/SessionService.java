@@ -5,10 +5,12 @@ import com.github.zigcat.greenhub.payment_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.PaymentSession;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.PaymentProvider;
+import com.github.zigcat.greenhub.payment_provider.domain.schemas.ScopeType;
 import com.github.zigcat.greenhub.payment_provider.domain.schemas.SubscriptionStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -28,6 +30,27 @@ public class SessionService {
         this.plans = plans;
         this.permissions = permissions;
         this.provider = provider;
+    }
+
+    public Flux<AppSubscription> listAll(ServerHttpRequest request){
+        return Flux.just(permissions.extractAuthData(request))
+                .flatMap(auth -> {
+                    if(!auth.getScopes().contains(ScopeType.PAYMENT_VIEW.getScope())){
+                        return Mono.error(new ForbiddenAppException("User hasn't access for this action"));
+                    }
+                    return subscriptions.retrieveByUserId(auth.getId());
+                });
+    }
+
+    public Mono<AppSubscription> retrieveActive(ServerHttpRequest request){
+        return Mono.just(permissions.extractAuthData(request))
+                .flatMap(auth -> {
+                    if(!auth.getScopes().contains(ScopeType.PAYMENT_VIEW.getScope())){
+                        return Mono.error(new ForbiddenAppException("User hasn't access for this action"));
+                    }
+                    return subscriptions.getActiveOrPendingSubscription(auth.getId())
+                            .switchIfEmpty(Mono.error(new NotFoundAppException("Active subscription not found")));
+                });
     }
 
     public Mono<PaymentSession> createSession(ServerHttpRequest request, Long planId) {

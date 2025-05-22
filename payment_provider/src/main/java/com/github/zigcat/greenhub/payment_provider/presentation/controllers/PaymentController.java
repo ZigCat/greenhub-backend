@@ -1,10 +1,12 @@
 package com.github.zigcat.greenhub.payment_provider.presentation.controllers;
 
 import com.github.zigcat.greenhub.payment_provider.application.usecases.SessionService;
+import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.PaymentSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -14,6 +16,17 @@ public class PaymentController {
 
     public PaymentController(SessionService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    public Mono<ResponseEntity<AppSubscription>> retrieve(ServerHttpRequest request){
+        return service.retrieveActive(request)
+                .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/list")
+    public Flux<AppSubscription> listAll(ServerHttpRequest request){
+        return service.listAll(request);
     }
 
     @PostMapping("/create/{plan}")

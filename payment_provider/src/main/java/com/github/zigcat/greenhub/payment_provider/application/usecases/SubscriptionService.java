@@ -57,6 +57,24 @@ public class SubscriptionService {
                 .doOnError(e -> log.error("Error saving new subscription: {}", e.getMessage()));
     }
 
+    public Mono<AppSubscription> getActiveOrPendingSubscription(Long userId) {
+        return repository.findByUserId(userId)
+                .filter(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
+                        || sub.getStatus() == SubscriptionStatus.PENDING)
+                .map(SubscriptionMapper::toEntity)
+                .next()
+                .doOnNext(sub -> log.debug("User {} has active or pending subscription: {}", userId, sub))
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.debug("User {} has no active or pending subscriptions", userId);
+                    return Mono.empty();
+                }))
+                .onErrorResume(e -> {
+                    log.error("Error checking subscriptions for user {}: {}", userId, e.getMessage(), e);
+                    return Mono.error(new ServerErrorAppException("Failed to check subscriptions"));
+                });
+    }
+
+
     public Mono<Boolean> hasActiveSubscriptions(Long userId) {
         return repository.findByUserId(userId)
                 .any(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
