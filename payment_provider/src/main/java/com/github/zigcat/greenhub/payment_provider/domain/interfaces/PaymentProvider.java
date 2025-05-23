@@ -11,6 +11,7 @@ public interface PaymentProvider {
     ProviderName getName();
     Mono<PaymentSession> createSubscription(String email, Long id, String planId);
     Mono<Void> cancelSubscription(String subscriptionId);
-    Mono<Void> cancelSubscriptionImmediately(String subscriptionId);
+    Mono<Void> resumeSubscription(String subscriptionId);
+    Mono<Void> refundSubscription(String subscriptionId);
     Mono<StripeEvent> handleWebhook(ServerHttpRequest request, String payload);
 }

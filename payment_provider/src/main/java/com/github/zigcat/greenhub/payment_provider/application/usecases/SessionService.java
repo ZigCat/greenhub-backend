@@ -126,6 +126,21 @@ public class SessionService {
                 }));
     }
 
+    public Mono<AppSubscription> resumeSubscription(ServerHttpRequest request){
+        log.info("Resuming cancelled subscription");
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(auth -> subscriptions.retrieveByUserId(auth.getId())
+                        .filter(sub -> sub.getStatus() == SubscriptionStatus.CANCEL_AWAITING)
+                        .singleOrEmpty()
+                        .switchIfEmpty(Mono.error(new NotFoundAppException("No awaiting to cancel subscriptions")))
+                        .flatMap(activeSub -> {
+                            log.info("Resuming subscription {}", activeSub);
+                            return provider.refundSubscription(activeSub.getProviderSubscriptionId())
+                                    .thenReturn(activeSub);
+                        }));
+    }
+
     public Mono<AppSubscription> cancelAndRefundSubscription(ServerHttpRequest request){
         log.info("Cancelling and refunding subscription");
         return Mono.fromCallable(() -> permissions.extractAuthData(request))
@@ -136,7 +151,7 @@ public class SessionService {
                 .switchIfEmpty(Mono.error(new NotFoundAppException("No active subscription to cancel")))
                 .flatMap(activeSub -> {
                     log.info("Cancelling and refunding subscription {}", activeSub);
-                    return provider.cancelSubscriptionImmediately(activeSub.getProviderSubscriptionId())
+                    return provider.refundSubscription(activeSub.getProviderSubscriptionId())
                             .thenReturn(activeSub);
                 }));
     }

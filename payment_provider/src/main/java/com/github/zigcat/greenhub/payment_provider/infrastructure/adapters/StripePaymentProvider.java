@@ -136,19 +136,53 @@ public class StripePaymentProvider implements PaymentProvider {
     @Override
     public Mono<Void> cancelSubscription(String subscriptionId) {
         return Mono.fromCallable(() -> {
+            Subscription subscription = Subscription.retrieve(subscriptionId);
+            if (!"active".equals(subscription.getStatus())) {
+                throw new BadRequestInfrastructureException("Subscription is not active and cannot be cancelled");
+            }
+            if (!Boolean.FALSE.equals(subscription.getCancelAtPeriodEnd())) {
+                throw new BadRequestInfrastructureException("Subscription is already cancelled");
+            }
             SubscriptionUpdateParams params = SubscriptionUpdateParams.builder()
                 .setCancelAtPeriodEnd(true)
                 .build();
-            Subscription.retrieve(subscriptionId).update(params);
+            subscription.update(params);
             return null;
         })
         .subscribeOn(Schedulers.boundedElastic())
-        .onErrorMap(e -> new SourceInfrastructureException("Stripe service error"))
+        .onErrorMap(e -> {
+            if (e instanceof CoreException) return e;
+            return new SourceInfrastructureException("Stripe services are unavailable");
+        })
         .then();
     }
 
     @Override
-    public Mono<Void> cancelSubscriptionImmediately(String subscriptionId) {
+    public Mono<Void> resumeSubscription(String subscriptionId) {
+        return Mono.fromCallable(() -> {
+                    Subscription subscription = Subscription.retrieve(subscriptionId);
+                    if (!"active".equals(subscription.getStatus())) {
+                        throw new BadRequestInfrastructureException("Subscription is not active and cannot be resumed");
+                    }
+                    if (!Boolean.TRUE.equals(subscription.getCancelAtPeriodEnd())) {
+                        throw new BadRequestInfrastructureException("Subscription is not scheduled for cancellation");
+                    }
+                    SubscriptionUpdateParams params = SubscriptionUpdateParams.builder()
+                            .setCancelAtPeriodEnd(false)
+                            .build();
+                    subscription.update(params);
+                    return null;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorMap(e -> {
+                    if (e instanceof CoreException) return e;
+                    return new SourceInfrastructureException("Stripe services are unavailable");
+                })
+                .then();
+    }
+
+    @Override
+    public Mono<Void> refundSubscription(String subscriptionId) {
         return Mono.fromCallable(() -> Subscription.retrieve(subscriptionId))
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(subscription -> {
