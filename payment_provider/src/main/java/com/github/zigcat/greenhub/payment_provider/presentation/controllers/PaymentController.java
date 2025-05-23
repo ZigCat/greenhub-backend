@@ -52,4 +52,12 @@ public class PaymentController {
         return service.cancelAndRefundSubscription(request)
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
+
+    @PostMapping("/resume")
+    public Mono<ResponseEntity<?>> resumeSubscription(
+            ServerHttpRequest request
+    ){
+        return service.resumeSubscription(request)
+                .then(Mono.just(ResponseEntity.noContent().build()));
+    }
 }
