@@ -63,7 +63,7 @@ public class UserPublicController {
     )
     @GetMapping("/{id}")
     public Mono<ResponseEntity<AppUser>> getById(@PathVariable("id") Long id){
-        return service.retrieve(id)
+        return service.retrieveByIdWithScopes(id)
                 .map(ResponseEntity::ok);
     }
 
