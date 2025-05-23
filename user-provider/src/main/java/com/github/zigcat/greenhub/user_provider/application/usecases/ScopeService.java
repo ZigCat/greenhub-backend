@@ -1,6 +1,7 @@
 package com.github.zigcat.greenhub.user_provider.application.usecases;
 
 import com.github.zigcat.greenhub.user_provider.application.exceptions.BadRequestAppException;
+import com.github.zigcat.greenhub.user_provider.application.exceptions.ConflictAppException;
 import com.github.zigcat.greenhub.user_provider.application.exceptions.ForbiddenAppException;
 import com.github.zigcat.greenhub.user_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.user_provider.domain.Scope;
@@ -68,7 +69,7 @@ public class ScopeService {
                         boolean match = scopes.stream()
                                 .anyMatch(s -> s.getScope().equals(target.getScope()));
                         if(match) {
-                            return Mono.error(new BadRequestAppException("User already has this scope"));
+                            return Mono.error(new ConflictAppException("User already has this scope"));
                         }
                         Scope newScope = new Scope(userId, target.getScope());
                         return repository.save(ScopeMapper.toModel(newScope)).map(ScopeMapper::toEntity);

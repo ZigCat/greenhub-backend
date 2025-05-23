@@ -76,6 +76,11 @@ public class R2dbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
+    public Mono<Integer> cancelAwaitingSubscriptions(LocalDateTime cutoff) {
+        return repository.cancelAwaitingSubscriptions(cutoff);
+    }
+
+    @Override
     public Mono<SubscriptionModel> save(SubscriptionModel model) {
         return repository.save(model)
                 .onErrorMap(e -> {

@@ -120,17 +120,33 @@ public class SessionService {
             .switchIfEmpty(Mono.error(new NotFoundAppException("No active subscription to cancel")))
             .flatMap(activeSub -> {
                 log.info("Canceling subscription {}", activeSub);
+                activeSub.setStatus(SubscriptionStatus.CANCEL_AWAITING);
                 return provider.cancelSubscription(activeSub.getProviderSubscriptionId())
-                        .then(Mono.just(activeSub));
+                        .then(subscriptions.save(activeSub));
             });
     }
 
     public Mono<String> handleStripeWebhook(ServerHttpRequest request, String payload){
         log.info("Received event from Stripe Webhook");
         return provider.handleWebhook(request, payload)
-            .flatMap(webhookSub -> {
-                ArrayList<SubscriptionStatus> target = new ArrayList<>(List.of(SubscriptionStatus.PENDING));
-                if(webhookSub.getStatus() != SubscriptionStatus.ACTIVE) target.add(SubscriptionStatus.ACTIVE);
+            .flatMap(event -> {
+                ArrayList<SubscriptionStatus> target = new ArrayList<>();
+                switch(event.getEventName()){
+                    case SESSION_COMPLETED,
+                            PAYMENT_SUCCEEDED -> target.addAll(List.of(
+                                    SubscriptionStatus.PENDING,
+                                    SubscriptionStatus.PAYMENT_FAILED));
+                    case PAYMENT_FAILED -> target.addAll(List.of(
+                                    SubscriptionStatus.ACTIVE,
+                                    SubscriptionStatus.PENDING,
+                                    SubscriptionStatus.PAYMENT_FAILED));
+                    case SUBSCRIPTION_DELETED -> target.addAll(List.of(
+                                    SubscriptionStatus.ACTIVE,
+                                    SubscriptionStatus.PENDING,
+                                    SubscriptionStatus.CANCEL_AWAITING
+                    ));
+                }
+                AppSubscription webhookSub = event.getAppSubscription();
                 return subscriptions.retrieveByCustomerId(webhookSub.getProviderCustomerId(), target)
                         .flatMap(subscription -> {
                             log.info("Original data: {}", webhookSub);

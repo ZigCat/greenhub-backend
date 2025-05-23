@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zigcat.greenhub.payment_provider.application.exceptions.BadRequestAppException;
 import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.PaymentSession;
+import com.github.zigcat.greenhub.payment_provider.domain.StripeEvent;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.PaymentProvider;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.UserProvider;
 import com.github.zigcat.greenhub.payment_provider.domain.schemas.ProviderName;
+import com.github.zigcat.greenhub.payment_provider.domain.schemas.StripeEventName;
 import com.github.zigcat.greenhub.payment_provider.domain.schemas.SubscriptionStatus;
+import com.github.zigcat.greenhub.payment_provider.exceptions.ClientErrorException;
 import com.github.zigcat.greenhub.payment_provider.exceptions.CoreException;
+import com.github.zigcat.greenhub.payment_provider.infrastructure.InfrastructureDTO;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.BadRequestInfrastructureException;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.ServerErrorInfrastructureException;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.SourceInfrastructureException;
@@ -52,6 +56,12 @@ public class StripePaymentProvider implements PaymentProvider {
                 .flatMap(existingCustomer -> Mono.just(existingCustomer.getId()))
                 .switchIfEmpty(createCustomer(userEmail, userId)
                         .flatMap(newCustomer -> userProvider.promote(userId)
+                                    .onErrorResume(e -> {
+                                        if(e instanceof ClientErrorException ce && ce.getCode() == 409){
+                                            return Mono.just(new InfrastructureDTO.ScopeDTO(null, userId, "payment.view"));
+                                        }
+                                        throw new SourceInfrastructureException("Failed to create Stripe customer");
+                                    })
                                     .thenReturn(newCustomer.getId())
                         ))
                 .onErrorMap(e -> {
@@ -159,7 +169,7 @@ public class StripePaymentProvider implements PaymentProvider {
         .then();
     }
 
-    public Mono<AppSubscription> handleWebhook(ServerHttpRequest request, String payload){
+    public Mono<StripeEvent> handleWebhook(ServerHttpRequest request, String payload){
         String sigHeader = request.getHeaders().getFirst("Stripe-Signature");
         Event event;
         try {
@@ -175,10 +185,10 @@ public class StripePaymentProvider implements PaymentProvider {
                         return handleSessionCompleted(event);
                     }
                     case "invoice.payment_succeeded" -> {
-                        return handleInvoiceEvent(event, SubscriptionStatus.ACTIVE);
+                        return handleInvoiceEvent(event, StripeEventName.PAYMENT_SUCCEEDED);
                     }
                     case "invoice.payment_failed" -> {
-                        return handleInvoiceEvent(event, SubscriptionStatus.PAYMENT_FAILED);
+                        return handleInvoiceEvent(event, StripeEventName.PAYMENT_FAILED);
                     }
                     case "customer.subscription.deleted" -> {
                         return handleSubscriptionDelete(event);
@@ -195,7 +205,7 @@ public class StripePaymentProvider implements PaymentProvider {
         });
     }
 
-    private Mono<AppSubscription> handleSessionCompleted(Event event) {
+    private Mono<StripeEvent> handleSessionCompleted(Event event) {
         return Mono.fromCallable(() -> {
             String jsonData = event.getDataObjectDeserializer().getRawJson();
             ObjectMapper objectMapper = new ObjectMapper();
@@ -209,15 +219,15 @@ public class StripePaymentProvider implements PaymentProvider {
                     sub.getId(),
                     sub.getCustomer(),
                     sessionId,
-                    SubscriptionStatus.ACTIVE,
+                    SubscriptionStatus.PENDING,
                     Instant.ofEpochSecond(sub.getCurrentPeriodStart()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
                     Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
             log.info("Data extracted from event: {}", subscription);
-            return subscription;
+            return new StripeEvent(StripeEventName.SESSION_COMPLETED, subscription);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    private Mono<AppSubscription> handleInvoiceEvent(Event event, SubscriptionStatus status){
+    private Mono<StripeEvent> handleInvoiceEvent(Event event, StripeEventName eventName){
         return Mono.fromCallable(() -> {
             String jsonData = event.getDataObjectDeserializer().getRawJson();
             ObjectMapper objectMapper = new ObjectMapper();
@@ -230,15 +240,17 @@ public class StripePaymentProvider implements PaymentProvider {
                     sub.getId(),
                     sub.getCustomer(),
                     invoiceId,
-                    status,
+                    eventName.equals(StripeEventName.PAYMENT_SUCCEEDED)
+                            ? SubscriptionStatus.ACTIVE
+                            : SubscriptionStatus.PAYMENT_FAILED,
                     Instant.ofEpochSecond(sub.getCurrentPeriodStart()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
                     Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
             log.info("Data extracted from event: {}", subscription);
-            return subscription;
+            return new StripeEvent(eventName, subscription);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    private Mono<AppSubscription> handleSubscriptionDelete(Event event){
+    private Mono<StripeEvent> handleSubscriptionDelete(Event event){
         return Mono.fromCallable(() -> {
             String jsonData = event.getDataObjectDeserializer().getRawJson();
             ObjectMapper objectMapper = new ObjectMapper();
@@ -257,7 +269,7 @@ public class StripePaymentProvider implements PaymentProvider {
                     Instant.ofEpochSecond(endDate).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime()
             );
             log.info("Data extracted from event: {}", subscription);
-            return subscription;
+            return new StripeEvent(StripeEventName.SUBSCRIPTION_DELETED, subscription);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }

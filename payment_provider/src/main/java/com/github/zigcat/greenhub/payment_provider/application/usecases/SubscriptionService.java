@@ -60,7 +60,9 @@ public class SubscriptionService {
     public Mono<AppSubscription> getActiveOrPendingSubscription(Long userId) {
         return repository.findByUserId(userId)
                 .filter(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
-                        || sub.getStatus() == SubscriptionStatus.PENDING)
+                        || sub.getStatus() == SubscriptionStatus.PENDING
+                        || sub.getStatus() == SubscriptionStatus.PAYMENT_FAILED
+                        || sub.getStatus() == SubscriptionStatus.CANCEL_AWAITING)
                 .map(SubscriptionMapper::toEntity)
                 .next()
                 .doOnNext(sub -> log.debug("User {} has active or pending subscription: {}", userId, sub))
@@ -78,7 +80,9 @@ public class SubscriptionService {
     public Mono<Boolean> hasActiveSubscriptions(Long userId) {
         return repository.findByUserId(userId)
                 .any(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE
-                        || sub.getStatus() == SubscriptionStatus.PENDING)
+                        || sub.getStatus() == SubscriptionStatus.PENDING
+                        || sub.getStatus() == SubscriptionStatus.PAYMENT_FAILED
+                        || sub.getStatus() == SubscriptionStatus.CANCEL_AWAITING)
                 .doOnSuccess(hasActive -> log.debug("User {} has active subscriptions: {}", userId, hasActive))
                 .onErrorResume(e -> {
                     log.error("Error checking active subscriptions for user {}: {}", userId, e.getMessage(), e);
@@ -90,10 +94,20 @@ public class SubscriptionService {
         return repository.delete(id);
     }
 
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(fixedRate = 3600000)
     public void schedulePendingExpiration() {
         log.info("Executing scheduled task for pending subscriptions expiration");
-        expirePendingSubscriptions(Duration.ofMinutes(10))
+        expirePendingSubscriptions(Duration.ofHours(24))
+                .subscribe(
+                        null,
+                        error -> log.error("Error in scheduled task: {}", error.getMessage())
+                );
+    }
+
+    @Scheduled(fixedRate = 3600000)
+    public void scheduleCanceling() {
+        log.info("Executing scheduled task for canceling subscriptions");
+        cancelAwaitingSubscriptions()
                 .subscribe(
                         null,
                         error -> log.error("Error in scheduled task: {}", error.getMessage())
@@ -103,6 +117,12 @@ public class SubscriptionService {
     private Mono<Void> expirePendingSubscriptions(Duration pendingLifetime) {
         LocalDateTime cutoff = LocalDateTime.now().minus(pendingLifetime);
         return repository.expireOldPendingSubscriptions(cutoff)
+                .then();
+    }
+
+    private Mono<Void> cancelAwaitingSubscriptions(){
+        LocalDateTime present = LocalDateTime.now();
+        return repository.cancelAwaitingSubscriptions(present)
                 .then();
     }
 }

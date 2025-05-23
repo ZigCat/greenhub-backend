@@ -13,6 +13,10 @@ public interface ReactiveSubscriptionRepository extends ReactiveCrudRepository<S
     Flux<SubscriptionModel> findAllByUserId(Long userId);
     Flux<SubscriptionModel> findAllByProviderCustomerId(String providerCustomerId);
     @Query("UPDATE user_subscriptions SET status = 'EXPIRED' " +
-            "WHERE status = 'PENDING' AND created_at < :cutoff")
+            "WHERE status IN ('PENDING', 'PAYMENT_FAILED') AND created_at < :cutoff")
     Mono<Integer> expireOldPendingSubscriptions(@Param("cutoff") LocalDateTime cutoff);
+
+    @Query("UPDATE user_subscriptions SET status = 'CANCELED' " +
+            "WHERE status = 'CANCEL_AWAITING' AND end_date < :present")
+    Mono<Integer> cancelAwaitingSubscriptions(@Param("present") LocalDateTime present);
 }
