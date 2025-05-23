@@ -84,9 +84,11 @@ public class ArticleController {
     public Flux<Article> getAll(
             ServerHttpRequest request,
             @RequestParam(required = false, defaultValue = "GRANTED") String status,
-            @RequestParam(required = false) Long creator
+            @RequestParam(required = false) Long creator,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
             ){
-        return service.list(request, status, creator);
+        return service.list(request, status, creator, page, size);
     }
 
     @Operation(

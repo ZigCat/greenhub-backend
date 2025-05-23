@@ -28,8 +28,8 @@ public class RedisRecommendationCache implements RecommendationCache {
     private static final String CACHE_KEY = "recommendation:dataModel";
     private static final Duration TTL = Duration.ofSeconds(30);
 
-    public RedisRecommendationCache(ReactiveRedisTemplate<String, String> dataModelRedisTemplate) {
-        this.dataModelRedisTemplate = dataModelRedisTemplate;
+    public RedisRecommendationCache(ReactiveRedisTemplate<String, String> redisTemplate) {
+        this.dataModelRedisTemplate = redisTemplate;
     }
 
     @Override

@@ -129,7 +129,9 @@ public class ArticlePublicController {
     @GetMapping
     public Flux<Article> getAll(
             ServerHttpRequest request,
-            @RequestParam(required = false) Long creator){
-        return service.list(request, "GRANTED", creator);
+            @RequestParam(required = false) Long creator,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size){
+        return service.list(request, "GRANTED", creator, page, size);
     }
 }
