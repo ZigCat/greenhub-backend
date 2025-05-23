@@ -7,9 +7,11 @@ import com.github.zigcat.greenhub.article_provider.exceptions.ClientErrorExcepti
 import com.github.zigcat.greenhub.article_provider.exceptions.ServerErrorException;
 import com.github.zigcat.greenhub.article_provider.presentation.DTO;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+@Component
 public class SubscriptionWebClientAdapter implements SubscriptionRepository {
     private final WebClient webClient;
 

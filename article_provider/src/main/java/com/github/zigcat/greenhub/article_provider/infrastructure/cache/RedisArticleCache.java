@@ -6,12 +6,14 @@ import com.github.zigcat.greenhub.article_provider.domain.Article;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleCache;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.DatabaseException;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
 
+@Component
 public class RedisArticleCache implements ArticleCache {
     private static final String CACHE_KEY = "articles:all";
     private static final Duration TTL = Duration.ofMinutes(5);
