@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuples;
 
 import java.util.Comparator;
 
@@ -71,9 +72,9 @@ public class ArticleService {
                                             tuple.getT3()
                                     ));
                 })
-                .sort(Comparator.comparingInt((Article a) -> a.getInteraction().getLikes())
-                        .thenComparingInt(a -> a.getInteraction().getViews())
+                .sort(Comparator.comparingInt((Article a) -> a.getInteraction().getViews())
                         .thenComparingDouble(a -> a.getInteraction().getRating())
+                        .thenComparingInt(a -> a.getInteraction().getLikes())
                         .reversed());
     }
 
@@ -87,10 +88,10 @@ public class ArticleService {
             );
     }
 
-
     public Flux<Article> list(
             ServerHttpRequest request,
             String articleStatus,
+            String paidStatus,
             Long creatorId,
             Integer page,
             Integer size
@@ -98,37 +99,67 @@ public class ArticleService {
         return Mono.fromCallable(() -> permissions.extractAuthData(request))
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(auth -> {
+                    ArticleStatus effectiveStatus;
+                    try {
+                        effectiveStatus = ArticleStatus.valueOf(articleStatus);
+                    } catch (Exception e){
+                        effectiveStatus = ArticleStatus.GRANTED;
+                    }
+                    PaidStatus effectivePaid;
+                    try {
+                        effectivePaid = PaidStatus.valueOf(paidStatus);
+                    } catch (Exception e){
+                        effectivePaid = null;
+                    }
+// Checking if the request is authorized
+                    if(!permissions.isAuthPresent(auth)){
+                        return Mono.zip(Mono.just(PaidStatus.FREE.getValue()), Mono.just(ArticleStatus.GRANTED));
+                    }
+//Checking authorized user's role for permitting non-granted articles
                     if (articleStatus != null &&
                             !articleStatus.equalsIgnoreCase(ArticleStatus.GRANTED.getValue()) &&
                             !auth.isAdmin()) {
-                        return Flux.<PaidStatus>error(new ForbiddenAppException("Access denied")).next();
+                        effectiveStatus = ArticleStatus.GRANTED;
                     }
-                    return subscriptionRepository.retrieve(auth)
+                    if(auth.isAdmin()){
+                        return Mono.zip(
+                                effectivePaid == null ? Mono.just("ALL") : Mono.just(effectivePaid.getValue()),
+                                Mono.just(effectiveStatus));
+                    }
+//Checking authorized user's subscription
+                    PaidStatus finalPaid = effectivePaid;
+                    Mono<String> ps = subscriptionRepository.retrieve(auth)
                             .onErrorResume(e -> {
                                 log.warn("An error occurred while trying to get Subscription: {}", e.getMessage());
                                 return Mono.just(new AppSubscription());
                             })
-                            .map(sub -> sub.getStatus().isEmpty()
-                                    ? PaidStatus.FREE
-                                    : PaidStatus.PAID);
+                            .flatMap(sub -> {
+                                if(sub.getStatus() != null){
+                                    return finalPaid == null ? Mono.just("ALL") : Mono.just(finalPaid.getValue());
+                                }
+                                return Mono.just(PaidStatus.FREE.getValue());
+                            });
+                    return Mono.zip(ps, Mono.just(effectiveStatus));
                 })
-                .flatMapMany(paid -> getAllArticles()
-                        .filter(article -> {
-                            boolean paidMatches = article.getPaidStatus().equals(paid);
-                            boolean statusMatches = articleStatus == null || article.getArticleStatus().getValue().equalsIgnoreCase(articleStatus);
-                            boolean creatorMatches = creatorId == null || article.getCreator().getId().equals(creatorId);
-                            return paidMatches && statusMatches && creatorMatches;
-                        }))
-                .collectList()
-                .flatMapMany(filtered -> {
-                    if (page != null && size != null) {
-                        int skip = page * size;
+                .flatMapMany(tuple -> {
+                    String paid = (String) tuple.getT1();
+                    ArticleStatus status = tuple.getT2();
+                    return getAllArticles().filter(article -> {
+                        boolean paidMatches = true;
+                        if(!"ALL".equals(paid)) paidMatches = article.getPaidStatus().equals(PaidStatus.valueOf(paid));
+                        boolean statusMatches = article.getArticleStatus().equals(status);
+                        boolean creatorMatches = creatorId == null || article.getCreator().getId().equals(creatorId);
+                        return paidMatches && statusMatches && creatorMatches;
+                    })
+                    .collectList()
+                    .flatMapMany(filtered -> {
+                        int skip = (page != null && size != null) ? (page-1) * size : 0;
+                        int take = (size != null) ? size : filtered.size();
                         return Flux.fromIterable(filtered.stream()
                                 .skip(skip)
-                                .limit(size)
+                                .limit(take)
                                 .toList());
-                    }
-                    return Flux.fromIterable(filtered);
+                    });
                 });
     }
 

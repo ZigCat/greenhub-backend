@@ -132,6 +132,6 @@ public class ArticlePublicController {
             @RequestParam(required = false) Long creator,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size){
-        return service.list(request, "GRANTED", creator, page, size);
+        return service.list(request, "GRANTED", "FREE", creator, page, size);
     }
 }

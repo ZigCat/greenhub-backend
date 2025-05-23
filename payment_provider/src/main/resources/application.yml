@@ -2,7 +2,7 @@ server:
   port: 8084
 spring:
   application:
-    name: payment_provider
+    name: payment-provider
   r2dbc:
     url: r2dbc:postgresql://${POSTGRES_DB_HOST}/greenhub
     username: ${DB_USERNAME}

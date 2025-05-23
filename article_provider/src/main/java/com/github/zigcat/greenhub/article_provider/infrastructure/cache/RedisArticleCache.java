@@ -2,9 +2,11 @@ package com.github.zigcat.greenhub.article_provider.infrastructure.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.zigcat.greenhub.article_provider.domain.Article;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleCache;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.DatabaseException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -20,9 +22,10 @@ public class RedisArticleCache implements ArticleCache {
     private final ReactiveRedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
-    public RedisArticleCache(ReactiveRedisTemplate<String, String> redisTemplate) {
+    public RedisArticleCache(@Qualifier("reactiveRedisTemplate") ReactiveRedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
     }
 
     @Override

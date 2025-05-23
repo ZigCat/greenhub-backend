@@ -10,31 +10,32 @@ import org.apache.mahout.cf.taste.impl.model.GenericDataModel;
 import org.apache.mahout.cf.taste.impl.model.GenericUserPreferenceArray;
 import org.apache.mahout.cf.taste.model.DataModel;
 import org.apache.mahout.cf.taste.model.PreferenceArray;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
 public class RedisRecommendationCache implements RecommendationCache {
-    private final ReactiveRedisTemplate<String, String> dataModelRedisTemplate;
+    private final ReactiveRedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String CACHE_KEY = "recommendation:dataModel";
     private static final Duration TTL = Duration.ofSeconds(30);
 
-    public RedisRecommendationCache(ReactiveRedisTemplate<String, String> redisTemplate) {
-        this.dataModelRedisTemplate = redisTemplate;
+    public RedisRecommendationCache(@Qualifier("reactiveRedisTemplate") ReactiveRedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
+
 
     @Override
     public Mono<DataModel> getCachedModel() {
-        return dataModelRedisTemplate.opsForValue()
+        return redisTemplate.opsForValue()
                 .get(CACHE_KEY)
                 .flatMap(json -> {
                     try {
@@ -51,7 +52,7 @@ public class RedisRecommendationCache implements RecommendationCache {
         try {
             Map<Long, List<PreferenceDTO>> preferences = convertToMap(dataModel);
             String json = objectMapper.writeValueAsString(preferences);
-            dataModelRedisTemplate.opsForValue().set(CACHE_KEY, json, TTL).subscribe();
+            redisTemplate.opsForValue().set(CACHE_KEY, json, TTL).subscribe();
         } catch (JsonProcessingException e) {
             throw new DatabaseException(e.getMessage());
         }
