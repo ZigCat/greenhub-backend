@@ -112,8 +112,8 @@ public class StripePaymentProvider implements PaymentProvider {
                             SessionCreateParams params = SessionCreateParams.builder()
                                     .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
                                     .setCustomer(customerId)
-                                    .setSuccessUrl("http://green-insight.space")
-                                    .setCancelUrl("http://green-insight.space/user/1")
+                                    .setSuccessUrl("http://green-insight.space/user/"+id)
+                                    .setCancelUrl("http://green-insight.space/user/"+id)
                                     .addLineItem(
                                             SessionCreateParams.LineItem.builder()
                                                     .setQuantity(1L)

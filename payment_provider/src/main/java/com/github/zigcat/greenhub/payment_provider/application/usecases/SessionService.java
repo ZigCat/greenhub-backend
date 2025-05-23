@@ -136,7 +136,7 @@ public class SessionService {
                         .switchIfEmpty(Mono.error(new NotFoundAppException("No awaiting to cancel subscriptions")))
                         .flatMap(activeSub -> {
                             log.info("Resuming subscription {}", activeSub);
-                            return provider.refundSubscription(activeSub.getProviderSubscriptionId())
+                            return provider.resumeSubscription(activeSub.getProviderSubscriptionId())
                                     .thenReturn(activeSub);
                         }));
     }
