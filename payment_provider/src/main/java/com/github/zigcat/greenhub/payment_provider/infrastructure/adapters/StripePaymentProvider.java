@@ -15,6 +15,7 @@ import com.github.zigcat.greenhub.payment_provider.exceptions.ClientErrorExcepti
 import com.github.zigcat.greenhub.payment_provider.exceptions.CoreException;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.InfrastructureDTO;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.BadRequestInfrastructureException;
+import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.NotFoundInfrastructureException;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.ServerErrorInfrastructureException;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.exceptions.SourceInfrastructureException;
 import com.stripe.Stripe;
@@ -35,6 +36,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -146,27 +149,41 @@ public class StripePaymentProvider implements PaymentProvider {
 
     @Override
     public Mono<Void> cancelSubscriptionImmediately(String subscriptionId) {
-        return Mono.fromCallable(() -> {
-            Subscription subscription = Subscription.retrieve(subscriptionId);
-            String latestInvoiceId = subscription.getLatestInvoice();
-            if (latestInvoiceId == null) {
-                throw new BadRequestInfrastructureException("No invoice found for refund");
-            }
-            Invoice invoice = Invoice.retrieve(latestInvoiceId);
-            if (invoice.getCharge() == null) {
-                throw new BadRequestInfrastructureException("No charge found for invoice");
-            }
-            subscription.cancel(Map.of("invoice_now", true, "prorate", true));
-            Refund.create(Map.of("charge", invoice.getCharge()));
-
-            return null;
-        })
-        .subscribeOn(Schedulers.boundedElastic())
-        .onErrorMap(e -> {
-            if(e instanceof CoreException) return e;
-            return new SourceInfrastructureException("Stripe services are unavailable");
-        })
-        .then();
+        return Mono.fromCallable(() -> Subscription.retrieve(subscriptionId))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(subscription -> {
+                    String latestInvoiceId = subscription.getLatestInvoice();
+                    if (latestInvoiceId == null) {
+                        return Mono.error(new BadRequestInfrastructureException("No invoice found for refund"));
+                    }
+                    return Mono.just(latestInvoiceId);
+                })
+                .flatMap(latestInvoiceId -> Mono.fromCallable(() -> Invoice.retrieve(latestInvoiceId))
+                        .subscribeOn(Schedulers.boundedElastic()))
+                .flatMap(invoice -> {
+                    if (invoice.getCharge() == null) {
+                        return Mono.error(new BadRequestInfrastructureException("No charge found for invoice"));
+                    }
+                    Map<String, Object> cancelParams = Map.of(
+                            "invoice_now", true,
+                            "prorate", true
+                    );
+                    return Mono.fromCallable(() -> {
+                                Subscription subscription = Subscription.retrieve(subscriptionId);
+                                subscription.cancel(cancelParams);
+                                return invoice.getCharge();
+                            })
+                            .subscribeOn(Schedulers.boundedElastic());
+                })
+                .flatMap(chargeId -> Mono.fromCallable(() -> {
+                    Refund.create(Map.of("charge", chargeId));
+                    return true;
+                }).subscribeOn(Schedulers.boundedElastic()))
+                .then()
+                .onErrorMap(e -> {
+                    if (e instanceof CoreException) return e;
+                    return new SourceInfrastructureException("Stripe services are unavailable");
+                });
     }
 
     public Mono<StripeEvent> handleWebhook(ServerHttpRequest request, String payload){
@@ -192,6 +209,9 @@ public class StripePaymentProvider implements PaymentProvider {
                     }
                     case "customer.subscription.deleted" -> {
                         return handleSubscriptionDelete(event);
+                    }
+                    case "customer.subscription.updated" -> {
+                        return handleSubscriptionUpdated(event);
                     }
                     default -> {
                         return Mono.error(new BadRequestInfrastructureException("Unhandled event"));
@@ -247,6 +267,45 @@ public class StripePaymentProvider implements PaymentProvider {
                     Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime());
             log.info("Data extracted from event: {}", subscription);
             return new StripeEvent(eventName, subscription);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private Mono<StripeEvent> handleSubscriptionUpdated(Event event){
+        return Mono.fromCallable(() -> {
+            String jsonData = event.getDataObjectDeserializer().getRawJson();
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode node = objectMapper.readTree(jsonData);
+            String subscriptionId = node.get("id").asText();
+            Subscription sub = Subscription.retrieve(subscriptionId);
+            Map<String, Object> previousAttributes = event.getData().getPreviousAttributes();
+            if(previousAttributes != null){
+                if(previousAttributes.containsKey("cancel_at_period_end")){
+                    SubscriptionStatus status;
+                    if(Boolean.TRUE.equals(previousAttributes.get("cancel_at_period_end"))){
+                        log.info("Subscription cancellation was undone, id = {}", sub.getId());
+                        status = SubscriptionStatus.ACTIVE;
+                    } else {
+                        log.info("Subscription was cancelled manually, id = {}", sub.getId());
+                        status = SubscriptionStatus.CANCEL_AWAITING;
+                    }
+                    AppSubscription subscription = new AppSubscription(
+                            ProviderName.STRIPE,
+                            sub.getId(),
+                            sub.getCustomer(),
+                            null,
+                            status,
+                            Instant.ofEpochSecond(sub.getCurrentPeriodStart()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime(),
+                            Instant.ofEpochSecond(sub.getCurrentPeriodEnd()).atZone(ZoneId.of("Asia/Yekaterinburg")).toLocalDateTime()
+                    );
+                    log.info("Data extracted from event: {}", subscription);
+                    return new StripeEvent(StripeEventName.SUBSCRIPTION_UPDATED, subscription);
+                } else {
+                    throw new NotFoundInfrastructureException("Nothing to update with this params");
+                }
+            } else {
+                log.warn("Deserialization error");
+                throw new ServerErrorInfrastructureException("Stripe object deserialization error");
+            }
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

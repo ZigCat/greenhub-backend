@@ -113,17 +113,32 @@ public class SessionService {
 
     public Mono<AppSubscription> cancelSubscription(ServerHttpRequest request){
         log.info("Canceling subscription manually");
-        AuthorizationData auth = permissions.extractAuthData(request);
-        return subscriptions.retrieveByUserId(auth.getId())
-            .filter(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE)
-            .singleOrEmpty()
-            .switchIfEmpty(Mono.error(new NotFoundAppException("No active subscription to cancel")))
-            .flatMap(activeSub -> {
-                log.info("Canceling subscription {}", activeSub);
-                activeSub.setStatus(SubscriptionStatus.CANCEL_AWAITING);
-                return provider.cancelSubscription(activeSub.getProviderSubscriptionId())
-                        .then(subscriptions.save(activeSub));
-            });
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+            .subscribeOn(Schedulers.boundedElastic())
+            .flatMap(auth -> subscriptions.retrieveByUserId(auth.getId())
+                .filter(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE)
+                .singleOrEmpty()
+                .switchIfEmpty(Mono.error(new NotFoundAppException("No active subscription to cancel")))
+                .flatMap(activeSub -> {
+                    log.info("Canceling subscription {}", activeSub);
+                    return provider.cancelSubscription(activeSub.getProviderSubscriptionId())
+                            .thenReturn(activeSub);
+                }));
+    }
+
+    public Mono<AppSubscription> cancelAndRefundSubscription(ServerHttpRequest request){
+        log.info("Cancelling and refunding subscription");
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+            .subscribeOn(Schedulers.boundedElastic())
+            .flatMap(auth -> subscriptions.retrieveByUserId(auth.getId())
+                .filter(sub -> sub.getStatus() == SubscriptionStatus.ACTIVE)
+                .singleOrEmpty()
+                .switchIfEmpty(Mono.error(new NotFoundAppException("No active subscription to cancel")))
+                .flatMap(activeSub -> {
+                    log.info("Cancelling and refunding subscription {}", activeSub);
+                    return provider.cancelSubscriptionImmediately(activeSub.getProviderSubscriptionId())
+                            .thenReturn(activeSub);
+                }));
     }
 
     public Mono<String> handleStripeWebhook(ServerHttpRequest request, String payload){
@@ -133,18 +148,20 @@ public class SessionService {
                 ArrayList<SubscriptionStatus> target = new ArrayList<>();
                 switch(event.getEventName()){
                     case SESSION_COMPLETED,
-                            PAYMENT_SUCCEEDED -> target.addAll(List.of(
-                                    SubscriptionStatus.PENDING,
-                                    SubscriptionStatus.PAYMENT_FAILED));
+                        PAYMENT_SUCCEEDED -> target.addAll(List.of(
+                            SubscriptionStatus.PENDING,
+                            SubscriptionStatus.PAYMENT_FAILED));
                     case PAYMENT_FAILED -> target.addAll(List.of(
-                                    SubscriptionStatus.ACTIVE,
-                                    SubscriptionStatus.PENDING,
-                                    SubscriptionStatus.PAYMENT_FAILED));
+                            SubscriptionStatus.ACTIVE,
+                            SubscriptionStatus.PENDING,
+                            SubscriptionStatus.PAYMENT_FAILED));
                     case SUBSCRIPTION_DELETED -> target.addAll(List.of(
-                                    SubscriptionStatus.ACTIVE,
-                                    SubscriptionStatus.PENDING,
-                                    SubscriptionStatus.CANCEL_AWAITING
-                    ));
+                            SubscriptionStatus.ACTIVE,
+                            SubscriptionStatus.PENDING,
+                            SubscriptionStatus.CANCEL_AWAITING));
+                    case SUBSCRIPTION_UPDATED -> target.addAll(List.of(
+                            SubscriptionStatus.ACTIVE,
+                            SubscriptionStatus.CANCEL_AWAITING));
                 }
                 AppSubscription webhookSub = event.getAppSubscription();
                 return subscriptions.retrieveByCustomerId(webhookSub.getProviderCustomerId(), target)
