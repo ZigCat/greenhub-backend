@@ -3,6 +3,7 @@ package com.github.zigcat.greenhub.user_provider.application.usecases;
 import com.github.zigcat.greenhub.user_provider.application.exceptions.BadRequestAppException;
 import com.github.zigcat.greenhub.user_provider.application.exceptions.ConflictAppException;
 import com.github.zigcat.greenhub.user_provider.application.exceptions.ForbiddenAppException;
+import com.github.zigcat.greenhub.user_provider.application.exceptions.ServerErrorAppException;
 import com.github.zigcat.greenhub.user_provider.domain.AuthorizationData;
 import com.github.zigcat.greenhub.user_provider.domain.Scope;
 import com.github.zigcat.greenhub.user_provider.domain.interfaces.ScopeRepository;
@@ -12,6 +13,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 
@@ -53,30 +55,37 @@ public class ScopeService {
     }
 
     public Mono<Scope> promote(String scope, Long userId, ServerHttpRequest request){
-        AuthorizationData auth = permissions.extractAuthData(request);
-        try {
-            ScopeType target = ScopeType.fromString(scope);
-            if(!permissions.canAccessAccount(auth, userId)){
-                return Mono.error(new ForbiddenAppException("Access denied"));
-            }
-            if(!ScopeType.selfGranted.contains(target) && !auth.isAdmin()){
-                return Mono.error(new ForbiddenAppException("Access denied"));
-            }
-            return repository.findScopesByUserId(userId)
-                    .map(ScopeMapper::toEntity)
-                    .collectList()
-                    .flatMap(scopes -> {
-                        boolean match = scopes.stream()
-                                .anyMatch(s -> s.getScope().equals(target.getScope()));
-                        if(match) {
-                            return Mono.error(new ConflictAppException("User already has this scope"));
-                        }
-                        Scope newScope = new Scope(userId, target.getScope());
-                        return repository.save(ScopeMapper.toModel(newScope)).map(ScopeMapper::toEntity);
-                    });
-        } catch (IllegalArgumentException e){
-            return Mono.error(new BadRequestAppException("Wrong scope param"));
-        }
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(auth -> {
+                    ScopeType target = ScopeType.fromString(scope);
+                    if(!permissions.canAccessAccount(auth, userId)){
+                        return Mono.error(new ForbiddenAppException("Access denied"));
+                    }
+                    if(!ScopeType.selfGranted.contains(target) && !auth.isAdmin()){
+                        return Mono.error(new ForbiddenAppException("Access denied"));
+                    }
+                    return Mono.just(target);
+                })
+                .flatMap(target -> promoteScope(target, userId))
+                .onErrorMap(e -> e instanceof IllegalArgumentException
+                        ? new BadRequestAppException("Wrong scope param")
+                        : new ServerErrorAppException("Internal Server Error"));
+    }
+
+    public Mono<Scope> promoteScope(ScopeType target, Long userId){
+        return repository.findScopesByUserId(userId)
+                .map(ScopeMapper::toEntity)
+                .collectList()
+                .flatMap(scopes -> {
+                    boolean match = scopes.stream()
+                            .anyMatch(s -> s.getScope().equals(target.getScope()));
+                    if(match) {
+                        return Mono.error(new ConflictAppException("User already has this scope"));
+                    }
+                    Scope newScope = new Scope(userId, target.getScope());
+                    return repository.save(ScopeMapper.toModel(newScope)).map(ScopeMapper::toEntity);
+                });
     }
 
     public Mono<Void> demote(String scope, Long userId, ServerHttpRequest request){

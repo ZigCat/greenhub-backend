@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.article_provider.infrastructure.adapters;
 
+import com.github.zigcat.greenhub.article_provider.domain.Interaction;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.InteractionRepository;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.BadRequestInfrastructureException;
 import com.github.zigcat.greenhub.article_provider.infrastructure.exceptions.ConflictInfrastructureException;
@@ -15,6 +16,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Repository
 public class InteractionAdapter implements InteractionRepository {
@@ -36,6 +39,13 @@ public class InteractionAdapter implements InteractionRepository {
             return Flux.error(new BadRequestInfrastructureException("ID cannot be null"));
         }
         Query query = new Query(Criteria.where("articleId").is(articleId));
+        return reactiveMongoTemplate.find(query, InteractionModel.class)
+                .onErrorMap(e -> new DatabaseException("Article service unavailable"));
+    }
+
+    @Override
+    public Flux<InteractionModel> findAllByArticleIds(List<Long> articleIds) {
+        Query query = new Query(Criteria.where("articleId").in(articleIds));
         return reactiveMongoTemplate.find(query, InteractionModel.class)
                 .onErrorMap(e -> new DatabaseException("Article service unavailable"));
     }

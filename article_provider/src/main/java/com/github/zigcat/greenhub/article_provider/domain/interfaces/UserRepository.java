@@ -5,4 +5,5 @@ import reactor.core.publisher.Mono;
 
 public interface UserRepository {
     Mono<AppUser> retrieve(Long id);
+    Mono<AppUser> promote(Long id);
 }

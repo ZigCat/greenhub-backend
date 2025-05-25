@@ -12,6 +12,7 @@ import com.github.zigcat.greenhub.article_provider.infrastructure.models.Article
 import com.github.zigcat.greenhub.article_provider.utils.ArticleUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -332,5 +333,26 @@ public class ArticleService {
                     repository.delete(model.getId()),
                     contentRepository.delete(model.getId())
                 )).then();
+    }
+
+    @Scheduled(fixedRate = 3600000)
+    public void checkUserArticlesForPromotion(){
+        log.info("Starting scheduled promotion algorithm");
+        getAllArticles()
+            .groupBy(Article::getCreator)
+            .flatMap(group -> group.collectList()
+                    .flatMap(articles -> {
+                        AppUser user = group.key();
+                        boolean anyOver = articles.stream().anyMatch(a -> a.getInteraction().getViews() >= 25);
+                        int total = articles.stream().mapToInt(a -> a.getInteraction().getViews()).sum();
+                        log.info("User {}: total views = {}, has high article = {}", user.getId(), total, anyOver);
+                        if (anyOver || total >= 100) {
+                            log.info("User {} will be promoted to Author", user.getId());
+                            return userRepository.promote(group.key().getId());
+                        } else {
+                            return Mono.empty();
+                        }
+                    }))
+            .subscribe();
     }
 }

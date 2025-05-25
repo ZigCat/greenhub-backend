@@ -133,4 +133,10 @@ public class UserController {
         return service.delete(id, request)
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
+
+    @PostMapping("/promote")
+    public Mono<ResponseEntity<AppUser>> promote(ServerHttpRequest request){
+        return service.promoteToAuthor(request)
+                .map(ResponseEntity::ok);
+    }
 }

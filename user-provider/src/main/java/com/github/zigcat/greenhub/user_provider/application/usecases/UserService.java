@@ -8,9 +8,11 @@ import com.github.zigcat.greenhub.user_provider.domain.interfaces.ArticleReposit
 import com.github.zigcat.greenhub.user_provider.domain.interfaces.AuthRepository;
 import com.github.zigcat.greenhub.user_provider.domain.interfaces.UserRepository;
 import com.github.zigcat.greenhub.user_provider.domain.schemas.Role;
+import com.github.zigcat.greenhub.user_provider.domain.schemas.ScopeType;
 import com.github.zigcat.greenhub.user_provider.exceptions.ClientErrorException;
 import com.github.zigcat.greenhub.user_provider.exceptions.ServerErrorException;
 import com.github.zigcat.greenhub.user_provider.infrastructure.mappers.UserMapper;
+import com.github.zigcat.greenhub.user_provider.presentation.utils.UserUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Base64;
 import java.util.List;
@@ -232,7 +235,25 @@ public class UserService {
                         }));
     }
 
-    public Mono<AppUser> checkUser(String username, String password){
+    public Mono<AppUser> promoteToAuthor(ServerHttpRequest request){
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(auth -> {
+                    if(!auth.isAdmin()) return Mono.error(new ForbiddenAppException("Access denied"));
+                    return Mono.just(auth);
+                })
+                .flatMap(auth -> userRepository.findById(auth.getId())
+                        .switchIfEmpty(Mono.error(new NotFoundAppException("User not found")))
+                        .flatMap(user -> {
+                            user.setRole(Role.AUTHOR);
+                            return userRepository.save(user)
+                                    .doOnNext(model -> scopeService.promoteScope(ScopeType.PAYMENT_CAPTURE, model.getId()))
+                                    .doOnNext(model -> scopeService.promoteScope(ScopeType.PAYMENT_VIEW, model.getId()))
+                                    .then(retrieveByIdWithScopes(user.getId()));
+                        }));
+    }
+
+    private Mono<AppUser> checkUser(String username, String password){
         return retrieveByEmail(username)
                 .map(user -> {
                     if(BCrypt.checkpw(password, user.getPassword())){
