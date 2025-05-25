@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.function.Tuples;
 
 import java.util.Comparator;
 
@@ -54,7 +53,7 @@ public class ArticleService {
         this.cache = cache;
     }
 
-    private Flux<Article> extractArticlesByPopularity(){
+    private Flux<Article> extractArticles(){
         return repository.findAll()
                 .flatMap(model -> {
                     Mono<AppUser> creator = userRepository.retrieve(model.getCreator())
@@ -71,17 +70,13 @@ public class ArticleService {
                                             tuple.getT2(),
                                             tuple.getT3()
                                     ));
-                })
-                .sort(Comparator.comparingInt((Article a) -> a.getInteraction().getViews())
-                        .thenComparingDouble(a -> a.getInteraction().getRating())
-                        .thenComparingInt(a -> a.getInteraction().getLikes())
-                        .reversed());
+                });
     }
 
     private Flux<Article> getAllArticles() {
         return cache.getCachedArticles()
             .switchIfEmpty(
-                extractArticlesByPopularity()
+                extractArticles()
                     .collectList()
                     .flatMapMany(articles -> cache.cacheArticles(articles)
                         .thenMany(Flux.fromIterable(articles)))
@@ -94,7 +89,8 @@ public class ArticleService {
             String paidStatus,
             Long creatorId,
             Integer page,
-            Integer size
+            Integer size,
+            Boolean sort
     ) {
         return Mono.fromCallable(() -> permissions.extractAuthData(request))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -142,7 +138,7 @@ public class ArticleService {
                     return Mono.zip(ps, Mono.just(effectiveStatus));
                 })
                 .flatMapMany(tuple -> {
-                    String paid = (String) tuple.getT1();
+                    String paid = tuple.getT1();
                     ArticleStatus status = tuple.getT2();
                     return getAllArticles().filter(article -> {
                         boolean paidMatches = true;
@@ -153,6 +149,9 @@ public class ArticleService {
                     })
                     .collectList()
                     .flatMapMany(filtered -> {
+                        if(Boolean.TRUE.equals(sort)){
+                            filtered.sort(Comparator.comparingDouble(Article::calculateScore).reversed());
+                        }
                         int skip = (page != null && size != null) ? (page-1) * size : 0;
                         int take = (size != null) ? size : filtered.size();
                         return Flux.fromIterable(filtered.stream()

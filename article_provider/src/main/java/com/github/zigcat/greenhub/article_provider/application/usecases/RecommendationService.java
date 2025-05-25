@@ -1,9 +1,9 @@
 package com.github.zigcat.greenhub.article_provider.application.usecases;
 
+import com.github.zigcat.greenhub.article_provider.domain.interfaces.AuthorCache;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.RecommendationCache;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.RecommendationRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
@@ -19,36 +19,51 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
 public class RecommendationService {
     private final RecommendationRepository recommendationRepository;
     private final RecommendationCache recommendationCache;
+    private final AuthorCache authorCache;
 
     public RecommendationService(
             RecommendationRepository recommendationRepository,
-            RecommendationCache recommendationCache
-    ) {
+            RecommendationCache recommendationCache,
+            AuthorCache authorCache) {
         this.recommendationRepository = recommendationRepository;
         this.recommendationCache = recommendationCache;
+        this.authorCache = authorCache;
     }
 
     public Mono<List<Long>> getRecommendations(Long userId) {
         return recommendationCache.getCachedModel()
                 .switchIfEmpty(recommendationRepository.loadModel()
                         .doOnNext(recommendationCache::cacheModel))
-                .flatMap(model -> generateRecommendations(userId, 10, model));
+                .flatMap(model -> generateRecommendations(userId, model));
     }
 
-    private Mono<List<Long>> generateRecommendations(Long userId, int numRecommendations, DataModel model) {
+    public Mono<List<Long>> getRecommendationsByAuthor(Long userId, Long authorId){
+        return Mono.zip(
+                        getRecommendations(userId),
+                        authorCache.getCachedRelations()
+                                .switchIfEmpty(recommendationRepository.loadRelations()
+                                        .doOnNext(authorCache::cacheRelations))
+                )
+                .map(tuple -> {
+                    List<Long> allRecommendations = tuple.getT1();
+                    Map<Long, Long> articleAuthorMap = tuple.getT2();
+                    return allRecommendations.stream()
+                            .filter(articleId -> authorId.equals(articleAuthorMap.get(articleId)))
+                            .toList();
+                });
+    }
+
+    private Mono<List<Long>> generateRecommendations(Long userId, DataModel model) {
         return Mono.fromCallable(() -> {
             UserSimilarity similarity = new PearsonCorrelationSimilarity(model);
-            UserNeighborhood neighborhood = new NearestNUserNeighborhood(10, similarity, model); // Увеличили соседей
+            UserNeighborhood neighborhood = new NearestNUserNeighborhood(10, similarity, model);
             UserBasedRecommender recommender = new GenericUserBasedRecommender(model, neighborhood, similarity);
 
             long[] neighbors = neighborhood.getUserNeighborhood(userId);
@@ -68,7 +83,6 @@ public class RecommendationService {
             }
             List<Long> recs = estimated.stream()
                     .sorted(Comparator.comparingDouble(RecommendedItem::getValue).reversed())
-                    .limit(numRecommendations)
                     .map(RecommendedItem::getItemID)
                     .toList();
             log.info("Recommendations for user {}: {}", userId, recs);

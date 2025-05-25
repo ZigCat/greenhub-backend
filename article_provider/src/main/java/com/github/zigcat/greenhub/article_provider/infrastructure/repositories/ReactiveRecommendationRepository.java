@@ -1,5 +1,7 @@
 package com.github.zigcat.greenhub.article_provider.infrastructure.repositories;
 
+import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleRepository;
+import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleModel;
 import com.github.zigcat.greenhub.article_provider.infrastructure.projections.InteractionProjection;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.InteractionRepository;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.RecommendationRepository;
@@ -19,9 +21,11 @@ import java.util.stream.Collectors;
 @Repository
 public class ReactiveRecommendationRepository implements RecommendationRepository {
     private final InteractionRepository interactions;
+    private final ArticleRepository articles;
 
-    public ReactiveRecommendationRepository(InteractionRepository interactions) {
+    public ReactiveRecommendationRepository(InteractionRepository interactions, ArticleRepository articles) {
         this.interactions = interactions;
+        this.articles = articles;
     }
 
     @Override
@@ -32,6 +36,11 @@ public class ReactiveRecommendationRepository implements RecommendationRepositor
                 .distinct()
                 .collectList()
                 .map(this::convertToDataModel);
+    }
+
+    @Override
+    public Mono<Map<Long, Long>> loadRelations() {
+        return articles.findAll().collectMap(ArticleModel::getId, ArticleModel::getCreator);
     }
 
     private DataModel convertToDataModel(List<InteractionProjection> interactions) {

@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
@@ -40,5 +42,14 @@ public class Article {
         this.content = content;
         this.annotation = annotation;
         this.category = category;
+    }
+
+    public Double calculateScore(){
+        Instant creationInstant = creationDate.atZone(java.time.ZoneOffset.UTC).toInstant();
+        long hours = Duration.between(creationInstant, Instant.now()).toHours();
+        return (interaction.getViews() * 0.5
+                + interaction.getLikes() * 2
+                + interaction.getRating() * 3)
+                / Math.pow(hours + 2, 1.5);
     }
 }

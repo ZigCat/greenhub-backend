@@ -16,7 +16,7 @@ public class InteractionProjection {
     public void calculateScore(boolean like, Integer views, Integer rating){
         float score = 0;
         if (like) score += 3.0F;
-        if (views != null) score += (float) (views * 0.01);
+        if (views != null) score += (float) (views * 0.5);
         if (rating != null) score += rating;
         this.score = score;
     }
