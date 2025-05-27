@@ -7,6 +7,7 @@ import com.github.zigcat.greenhub.article_provider.domain.*;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.*;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.ArticleStatus;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
+import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleContentModel;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.ArticleModel;
 import com.github.zigcat.greenhub.article_provider.utils.ArticleUtils;
@@ -340,19 +341,22 @@ public class ArticleService {
         log.info("Starting scheduled promotion algorithm");
         getAllArticles()
             .groupBy(Article::getCreator)
-            .flatMap(group -> group.collectList()
-                    .flatMap(articles -> {
-                        AppUser user = group.key();
-                        boolean anyOver = articles.stream().anyMatch(a -> a.getInteraction().getViews() >= 25);
-                        int total = articles.stream().mapToInt(a -> a.getInteraction().getViews()).sum();
-                        log.info("User {}: total views = {}, has high article = {}", user.getId(), total, anyOver);
-                        if (anyOver || total >= 100) {
-                            log.info("User {} will be promoted to Author", user.getId());
-                            return userRepository.promote(group.key().getId());
-                        } else {
-                            return Mono.empty();
-                        }
-                    }))
+            .flatMap(group -> {
+                AppUser creator = group.key();
+                if(!creator.getRole().equalsIgnoreCase(Role.USER.toString())) return Flux.empty();
+                return group.collectList()
+                        .flatMap(articles -> {
+                            boolean anyOver = articles.stream().anyMatch(a -> a.getInteraction().getViews() >= 25);
+                            int total = articles.stream().mapToInt(a -> a.getInteraction().getViews()).sum();
+                            log.info("User {}: total views = {}, has high article = {}", creator.getId(), total, anyOver);
+                            if (anyOver || total >= 100) {
+                                log.info("User {} will be promoted to Author", creator.getId());
+                                return userRepository.promote(group.key().getId());
+                            } else {
+                                return Mono.empty();
+                            }
+                        });
+            })
             .subscribe();
     }
 }

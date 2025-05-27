@@ -11,7 +11,7 @@ public class UserWebClientAdapter implements UserRepository {
     private final WebClient webClient;
 
     public UserWebClientAdapter(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("lb://user-provider").build();
+        this.webClient = webClientBuilder.baseUrl("http://user-provider").build();
     }
 
     @Override
