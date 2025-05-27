@@ -11,6 +11,7 @@ public interface SubscriptionRepository {
     Mono<SubscriptionModel> findById(Long id);
     Flux<SubscriptionModel> findByUserId(Long userId);
     Flux<SubscriptionModel> findAllByCustomerId(String id);
+    Flux<SubscriptionModel> findAllActive();
     Mono<Integer> expireOldPendingSubscriptions(LocalDateTime cutoff);
     Mono<Integer> cancelAwaitingSubscriptions(LocalDateTime cutoff);
     Mono<SubscriptionModel> save(SubscriptionModel model);

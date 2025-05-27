@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 public interface ReactiveSubscriptionRepository extends ReactiveCrudRepository<SubscriptionModel, Long> {
     Flux<SubscriptionModel> findAllByUserId(Long userId);
     Flux<SubscriptionModel> findAllByProviderCustomerId(String providerCustomerId);
+    @Query("SELECT * FROM user_subscriptions " +
+            "WHERE status IN ('ACTIVE', 'CANCEL_AWAITING') " +
+            "AND start_date <= NOW() AND end_date >= NOW()")
+    Flux<SubscriptionModel> findAllActive();
     @Query("UPDATE user_subscriptions SET status = 'EXPIRED' " +
             "WHERE status IN ('PENDING', 'PAYMENT_FAILED') AND created_at < :cutoff")
     Mono<Integer> expireOldPendingSubscriptions(@Param("cutoff") LocalDateTime cutoff);

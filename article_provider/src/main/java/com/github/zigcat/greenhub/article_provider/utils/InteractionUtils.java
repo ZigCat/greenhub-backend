@@ -4,6 +4,8 @@ import com.github.zigcat.greenhub.article_provider.domain.Interaction;
 import com.github.zigcat.greenhub.article_provider.infrastructure.projections.InteractionProjection;
 import com.github.zigcat.greenhub.article_provider.infrastructure.models.InteractionModel;
 
+import java.time.Instant;
+
 public class InteractionUtils {
     public static InteractionProjection toProjection(InteractionModel model){
         InteractionProjection projection = new InteractionProjection();
@@ -20,7 +22,8 @@ public class InteractionUtils {
                 model.getUserId(),
                 Boolean.TRUE.equals(model.getLike()) ? 1 : 0,
                 model.getViews(),
-                model.getRating() != null ? model.getRating().doubleValue() : 0.0
+                model.getRating() != null ? model.getRating().doubleValue() : 0.0,
+                model.getUpdatedAt()
         );
     }
 

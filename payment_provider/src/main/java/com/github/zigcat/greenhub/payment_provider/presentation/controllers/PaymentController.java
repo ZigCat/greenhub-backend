@@ -24,6 +24,11 @@ public class PaymentController {
                 .map(ResponseEntity::ok);
     }
 
+    @GetMapping("/active")
+    public Flux<AppSubscription> listAllActive(ServerHttpRequest request){
+        return service.listAllActive(request);
+    }
+
     @GetMapping("/list")
     public Flux<AppSubscription> listAll(ServerHttpRequest request){
         return service.listAll(request);

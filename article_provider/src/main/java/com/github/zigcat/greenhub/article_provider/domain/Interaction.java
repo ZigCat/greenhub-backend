@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,12 +22,14 @@ public class Interaction {
     private Integer views;
     @Schema(example = "5.0")
     private Double rating;
+    private Instant updatedAt;
 
     public Interaction(Long articleId) {
         this.articleId = articleId;
         this.likes = 0;
         this.views = 0;
         this.rating = 0.0;
+        this.updatedAt = Instant.now();
     }
 
     public Interaction(Long articleId, Integer likes, Integer views, Double rating) {

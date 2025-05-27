@@ -19,6 +19,8 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+
 @RestController
 @RequestMapping("/protected/interact")
 @Tag(name = "PROTECTED", description = "Article's protected endpoints")

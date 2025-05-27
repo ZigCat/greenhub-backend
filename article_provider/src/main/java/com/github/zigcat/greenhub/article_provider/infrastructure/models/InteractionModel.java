@@ -8,6 +8,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
 
+import java.time.Instant;
+
 @Document(collection = "interactions")
 @Data
 @AllArgsConstructor
@@ -25,12 +27,14 @@ public class InteractionModel {
     private Boolean like;
     private Integer views;
     private Integer rating;
+    private Instant updatedAt;
 
-    public InteractionModel(Long userId, Long articleId, Boolean like, Integer views, Integer rating) {
+    public InteractionModel(Long userId, Long articleId, Boolean like, Integer views, Integer rating, Instant updatedAt) {
         this.userId = userId;
         this.articleId = articleId;
         this.like = like;
         this.views = views;
         this.rating = rating;
+        this.updatedAt = updatedAt;
     }
 }

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -68,6 +69,7 @@ public class InteractionAdapter implements InteractionRepository {
         if(like != null) update.set("like", like > 0);
         if(views != null && views != 0) update.inc("views");
         if(rating != null) update.set("rating", rating);
+        update.set("updatedAt", Instant.now());
         return reactiveMongoTemplate.findAndModify(
                 query,
                 update,

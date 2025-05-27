@@ -32,11 +32,19 @@ public class SessionService {
         this.provider = provider;
     }
 
+    public Flux<AppSubscription> listAllActive(ServerHttpRequest request){
+        return Flux.just(permissions.extractAuthData(request))
+                .flatMap(auth -> {
+                    if(!auth.isAdmin()) return Flux.error(new ForbiddenAppException("User hasn't access for this action"));
+                    return subscriptions.listAllActive();
+                });
+    }
+
     public Flux<AppSubscription> listAll(ServerHttpRequest request){
         return Flux.just(permissions.extractAuthData(request))
                 .flatMap(auth -> {
                     if(!auth.getScopes().contains(ScopeType.PAYMENT_VIEW.getScope())){
-                        return Mono.error(new ForbiddenAppException("User hasn't access for this action"));
+                        return Flux.error(new ForbiddenAppException("User hasn't access for this action"));
                     }
                     return subscriptions.retrieveByUserId(auth.getId());
                 });

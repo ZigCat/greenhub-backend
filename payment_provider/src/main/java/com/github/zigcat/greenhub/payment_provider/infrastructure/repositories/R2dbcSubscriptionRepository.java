@@ -71,6 +71,15 @@ public class R2dbcSubscriptionRepository implements SubscriptionRepository {
     }
 
     @Override
+    public Flux<SubscriptionModel> findAllActive() {
+        return repository.findAllActive()
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
+                    throw new SourceInfrastructureException("Payment service unavailable");
+                });
+    }
+
+    @Override
     public Mono<Integer> expireOldPendingSubscriptions(LocalDateTime cutoff) {
         return repository.expireOldPendingSubscriptions(cutoff);
     }

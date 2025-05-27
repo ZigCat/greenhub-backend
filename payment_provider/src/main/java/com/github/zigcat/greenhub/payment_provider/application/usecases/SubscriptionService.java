@@ -24,6 +24,10 @@ public class SubscriptionService {
     public SubscriptionService(SubscriptionRepository repository) {
         this.repository = repository;
     }
+    public Flux<AppSubscription> listAllActive(){
+        return repository.findAllActive()
+                .map(SubscriptionMapper::toEntity);
+    }
 
     public Flux<AppSubscription> list(){
         return repository.findAll().map(SubscriptionMapper::toEntity);
