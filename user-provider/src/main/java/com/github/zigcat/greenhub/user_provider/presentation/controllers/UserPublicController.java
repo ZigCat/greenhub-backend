@@ -13,12 +13,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/public")
@@ -91,5 +90,10 @@ public class UserPublicController {
     @GetMapping
     public Flux<AppUser> getAll(){
         return service.list();
+    }
+
+    @PostMapping
+    public Flux<AppUser> getByIds(@RequestBody List<Long> ids){
+        return service.listByIds(ids);
     }
 }

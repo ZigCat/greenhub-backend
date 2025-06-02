@@ -32,6 +32,8 @@ public class AppUser {
     private LocalDateTime regDate;
     @Schema
     private String scopes;
+    @Schema
+    private Boolean isVerified;
 
     public AppUser(String email, String password) {
         this.email = email;
@@ -48,14 +50,7 @@ public class AppUser {
         this.regDate = regDate;
     }
 
-    public AppUser(Long id, String email, Role role, String scopes) {
-        this.id = id;
-        this.email = email;
-        this.role = role;
-        this.scopes = scopes;
-    }
-
-    public AppUser(Long id, String fname, String lname, String email, Role role, LocalDateTime regDate, String scopes) {
+    public AppUser(Long id, String fname, String lname, String email, Role role, LocalDateTime regDate, String scopes, Boolean isVerified) {
         this.id = id;
         this.fname = fname;
         this.lname = lname;
@@ -63,6 +58,7 @@ public class AppUser {
         this.role = role;
         this.regDate = regDate;
         this.scopes = scopes;
+        this.isVerified = isVerified;
     }
 
     public AppUser(String fname, String lname, String email, String password) {

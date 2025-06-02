@@ -45,6 +45,10 @@ public class UserModel {
     @Schema
     private LocalDateTime regDate;
 
+    @Column("is_verified")
+    @Schema
+    private Boolean isVerified;
+
     public UserModel(String fname, String lname, String email, String password, Role role, LocalDateTime regDate) {
         this.fname = fname;
         this.lname = lname;
@@ -52,5 +56,15 @@ public class UserModel {
         this.password = password;
         this.role = role;
         this.regDate = regDate;
+    }
+
+    public UserModel(String fname, String lname, String email, String password, Role role, LocalDateTime regDate, Boolean isVerified) {
+        this.fname = fname;
+        this.lname = lname;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+        this.regDate = regDate;
+        this.isVerified = isVerified;
     }
 }

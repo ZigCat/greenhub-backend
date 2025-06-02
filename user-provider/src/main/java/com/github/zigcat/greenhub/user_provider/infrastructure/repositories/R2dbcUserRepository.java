@@ -18,6 +18,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Repository
 @Slf4j
 public class R2dbcUserRepository implements UserRepository {
@@ -46,6 +48,15 @@ public class R2dbcUserRepository implements UserRepository {
                     if(e instanceof EmptyResultDataAccessException){
                         throw new NotFoundInfrastructureException("Couldn't found User with this ID");
                     }
+                    throw new DatabaseException("User service unavailable");
+                });
+    }
+
+    @Override
+    public Flux<UserModel> findByIds(List<Long> ids){
+        return repository.findAllById(ids)
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
                     throw new DatabaseException("User service unavailable");
                 });
     }

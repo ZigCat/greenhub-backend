@@ -2,13 +2,10 @@ package com.github.zigcat.greenhub.article_provider.application.usecases;
 
 import com.github.zigcat.greenhub.article_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.article_provider.domain.AuthorReward;
-import com.github.zigcat.greenhub.article_provider.domain.interfaces.ArticleRepository;
-import com.github.zigcat.greenhub.article_provider.domain.interfaces.AuthorRewardRepository;
-import com.github.zigcat.greenhub.article_provider.domain.interfaces.InteractionRepository;
-import com.github.zigcat.greenhub.article_provider.domain.interfaces.SubscriptionRepository;
+import com.github.zigcat.greenhub.article_provider.domain.interfaces.*;
+import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.article_provider.infrastructure.mappers.RewardMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -22,12 +19,14 @@ import java.util.List;
 @Slf4j
 public class RewardService {
     private final AuthorRewardRepository repository;
+    private final UserRepository users;
     private final SubscriptionRepository subscriptions;
     private final InteractionRepository interactions;
     private final ArticleRepository articles;
 
-    public RewardService(AuthorRewardRepository repository, SubscriptionRepository subscriptions, InteractionRepository interactions, ArticleRepository articles) {
+    public RewardService(AuthorRewardRepository repository, UserRepository users, SubscriptionRepository subscriptions, InteractionRepository interactions, ArticleRepository articles) {
         this.repository = repository;
+        this.users = users;
         this.subscriptions = subscriptions;
         this.interactions = interactions;
         this.articles = articles;
@@ -66,7 +65,10 @@ public class RewardService {
                                                 return Mono.empty();
                                             })
                                             .filter(model -> model.getCreator() != null)
-                                            .map(model -> new AuthorReward(model.getCreator(), rewardPerArticle, LocalDateTime.now()));
+                                            .flatMap(model -> users
+                                                    .retrieve(model.getCreator())
+                                                    .filter(u -> u.getRole().equalsIgnoreCase(Role.AUTHOR.toString()))
+                                                    .map(u -> new AuthorReward(u.getId(), rewardPerArticle, LocalDateTime.now())));
 
                                     rewardMonos.add(reward);
                                 }

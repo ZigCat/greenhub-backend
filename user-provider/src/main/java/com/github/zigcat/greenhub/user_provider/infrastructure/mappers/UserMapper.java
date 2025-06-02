@@ -23,12 +23,13 @@ public class UserMapper {
             String email = rows.get(0).email();
             LocalDateTime regDate = rows.get(0).regDate();
             String role = rows.get(0).role();
+            Boolean isVerified = rows.get(0).isVerified();
             List<String> scopes = rows.stream()
                     .map(InfrastructureDTO.UserAuth::scopes)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             String scope = String.join(" ", scopes);
-            return new InfrastructureDTO.UserAuth(id, fname, lname, email, regDate, role, scope);
+            return new InfrastructureDTO.UserAuth(id, fname, lname, email, regDate, role, scope, isVerified);
         });
     }
 
@@ -43,7 +44,8 @@ public class UserMapper {
                 model.getRegDate(),
                 scopes == null ? null : scopes.stream()
                         .map(Scope::getScope)
-                        .collect(Collectors.joining(" "))
+                        .collect(Collectors.joining(" ")),
+                model.getIsVerified()
         );
     }
 
@@ -55,7 +57,8 @@ public class UserMapper {
                 dto.email(),
                 Role.valueOf(dto.role()),
                 dto.regDate(),
-                dto.scopes()
+                dto.scopes(),
+                dto.isVerified()
         );
     }
 
@@ -67,7 +70,8 @@ public class UserMapper {
                 entity.getEmail(),
                 entity.getPassword(),
                 entity.getRole(),
-                entity.getRegDate()
+                entity.getRegDate(),
+                entity.getIsVerified()
         );
     }
 }

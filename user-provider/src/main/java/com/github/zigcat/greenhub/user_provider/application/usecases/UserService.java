@@ -83,6 +83,21 @@ public class UserService {
                 });
     }
 
+    public Flux<AppUser> listByIds(List<Long> ids){
+        if(ids.isEmpty()) return Flux.error(new BadRequestAppException("Value empty"));
+        return userRepository.findByIds(ids)
+                .map(model -> UserMapper.toEntity(model, null))
+                .onErrorResume(e -> {
+                    log.error("An error occurred: {}", e.getMessage());
+                    if(e instanceof ClientErrorException ce){
+                        return Mono.error(new ClientErrorException(ce.getMessage(), ce.getCode()));
+                    } else if(e instanceof ServerErrorException se){
+                        return Mono.error(new ServerErrorException(se.getMessage(), se.getCode()));
+                    }
+                    return Mono.error(new ServerErrorAppException("An unexpected error occurred"));
+                });
+    }
+
     public Mono<AppUser> retrieveByEmail(String email){
         return userRepository.findByEmail(email)
                 .switchIfEmpty(Mono.error(new NotFoundAppException("User with this email not found")))

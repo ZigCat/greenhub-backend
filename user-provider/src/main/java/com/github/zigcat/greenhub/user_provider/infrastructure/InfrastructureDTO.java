@@ -10,6 +10,7 @@ public class InfrastructureDTO {
             String email,
             LocalDateTime regDate,
             String role,
-            String scopes
+            String scopes,
+            Boolean isVerified
     ){}
 }

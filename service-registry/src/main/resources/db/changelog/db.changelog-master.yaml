@@ -635,3 +635,16 @@ databaseChangeLog:
             columnName: reward_id
             tableName: author_reward
             defaultValueComputed: "nextval('ar_sequence')"
+  - changeSet:
+      id: 015-alter-user
+      author: ZigCat
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: is_verified
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

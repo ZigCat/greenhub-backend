@@ -25,4 +25,6 @@ public class AppUser {
     private String role;
     @JsonIgnore
     private LocalDateTime regDate;
+    @Schema
+    private Boolean isVerified;
 }

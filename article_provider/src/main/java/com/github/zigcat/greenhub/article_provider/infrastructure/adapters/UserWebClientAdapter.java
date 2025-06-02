@@ -4,7 +4,10 @@ import com.github.zigcat.greenhub.article_provider.domain.AppUser;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.UserRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Component
 public class UserWebClientAdapter implements UserRepository {
@@ -30,5 +33,14 @@ public class UserWebClientAdapter implements UserRepository {
                 .header("X-User-Id", id.toString())
                 .retrieve()
                 .bodyToMono(AppUser.class);
+    }
+
+    @Override
+    public Flux<AppUser> listByIds(List<Long> ids) {
+        return webClient.post()
+                .uri("/public/specified")
+                .bodyValue(ids)
+                .retrieve()
+                .bodyToFlux(AppUser.class);
     }
 }
