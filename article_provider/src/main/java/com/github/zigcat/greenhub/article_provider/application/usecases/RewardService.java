@@ -3,6 +3,7 @@ package com.github.zigcat.greenhub.article_provider.application.usecases;
 import com.github.zigcat.greenhub.article_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.article_provider.domain.AuthorReward;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.*;
+import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.article_provider.infrastructure.mappers.RewardMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -65,11 +66,12 @@ public class RewardService {
                                                 return Mono.empty();
                                             })
                                             .filter(model -> model.getCreator() != null)
+                                            .filter(model -> model.getPaidStatus().equals(PaidStatus.PAID))
                                             .flatMap(model -> users
                                                     .retrieve(model.getCreator())
                                                     .filter(u -> {
-                                                        boolean pass = u.getRole().equalsIgnoreCase(Role.AUTHOR.toString());
-                                                        log.info("Article: {}, user: {}, isPassed = {}", model, u, pass);
+                                                        boolean pass = u.getRole().equals(Role.AUTHOR.toString());
+                                                        log.info("Article: {}, user: {}, isPassed = {}", model.getId(), u, pass);
                                                         return pass;
                                                     })
                                                     .map(u -> new AuthorReward(u.getId(), rewardPerArticle, LocalDateTime.now())));
