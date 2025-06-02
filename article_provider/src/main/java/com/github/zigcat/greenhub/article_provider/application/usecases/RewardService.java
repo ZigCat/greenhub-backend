@@ -67,7 +67,11 @@ public class RewardService {
                                             .filter(model -> model.getCreator() != null)
                                             .flatMap(model -> users
                                                     .retrieve(model.getCreator())
-                                                    .filter(u -> u.getRole().equalsIgnoreCase(Role.AUTHOR.toString()))
+                                                    .filter(u -> {
+                                                        boolean pass = u.getRole().equalsIgnoreCase(Role.AUTHOR.toString());
+                                                        log.info("Article: {}, user: {}, isPassed = {}", model, u, pass);
+                                                        return pass;
+                                                    })
                                                     .map(u -> new AuthorReward(u.getId(), rewardPerArticle, LocalDateTime.now())));
 
                                     rewardMonos.add(reward);
