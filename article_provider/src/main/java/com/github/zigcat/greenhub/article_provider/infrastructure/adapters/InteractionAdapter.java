@@ -66,13 +66,18 @@ public class InteractionAdapter implements InteractionRepository {
 
         Aggregation agg = Aggregation.newAggregation(
                 Aggregation.match(new Criteria().andOperator(userCriteria, viewsCriteria, dateCriteria)),
-                Aggregation.group("userId", "articleId").first("articleId").as("articleId"),
-                Aggregation.project("articleId").and("userId").previousOperation()
+                Aggregation.group("userId", "articleId")
+                        .first("userId").as("userId")
+                        .first("articleId").as("articleId")
         );
 
         return reactiveMongoTemplate.aggregate(agg, "interactions", Document.class)
                 .map(doc -> {
                     Document idDoc = (Document) doc.get("_id");
+                    if (idDoc == null) {
+                        throw new IllegalStateException("Group _id document is null");
+                    }
+
                     Long userId = ((Number) idDoc.get("userId")).longValue();
                     Long articleId = ((Number) idDoc.get("articleId")).longValue();
                     return Tuples.of(userId, articleId);
