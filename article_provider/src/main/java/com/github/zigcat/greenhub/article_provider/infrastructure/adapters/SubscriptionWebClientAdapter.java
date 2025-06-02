@@ -9,6 +9,7 @@ import com.github.zigcat.greenhub.article_provider.presentation.DTO;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -35,5 +36,20 @@ public class SubscriptionWebClientAdapter implements SubscriptionRepository {
                     response.bodyToMono(DTO.ApiError.class)
                         .map(data -> new ServerErrorException(data.message(), data.status())))
                 .bodyToMono(AppSubscription.class);
+    }
+
+    @Override
+    public Flux<AppSubscription> listAllActive() {
+        return webClient.get()
+                .uri("/protected/subscription/active")
+                .header("X-User-Role", "ADMIN")
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                        response.bodyToMono(DTO.ApiError.class)
+                                .map(data -> new ClientErrorException(data.message(), data.status())))
+                .onStatus(HttpStatusCode::is5xxServerError, response ->
+                        response.bodyToMono(DTO.ApiError.class)
+                                .map(data -> new ServerErrorException(data.message(), data.status())))
+                .bodyToFlux(AppSubscription.class);
     }
 }

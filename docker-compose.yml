@@ -190,6 +190,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      user-provider:
+        condition: service_healthy
+      payment-provider:
+        condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
       DB_USERNAME: ${DB_USERNAME}

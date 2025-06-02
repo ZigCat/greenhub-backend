@@ -599,3 +599,39 @@ databaseChangeLog:
         - dropDefaultValue:
             columnName: status
             tableName: user_subscriptions
+  - changeSet:
+      id: 014-create-reward-table
+      author: ZigCat
+      changes:
+        - createSequence:
+            sequenceName: ar_sequence
+            startValue: 1
+            allocationSize: 1
+        - createTable:
+            tableName: author_reward
+            columns:
+              - column:
+                  name: reward_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reward
+                  type: double precision
+                  constraints:
+                    nullable: false
+              - column:
+                  name: calculated_at
+                  type: timestamp
+                  defaultValue: NOW()
+                  constraints:
+                    nullable: false
+        - addDefaultValue:
+            columnName: reward_id
+            tableName: author_reward
+            defaultValueComputed: "nextval('ar_sequence')"
