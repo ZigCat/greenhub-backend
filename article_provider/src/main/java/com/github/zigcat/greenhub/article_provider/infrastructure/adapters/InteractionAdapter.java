@@ -73,8 +73,8 @@ public class InteractionAdapter implements InteractionRepository {
         return reactiveMongoTemplate.aggregate(agg, "interactions", Document.class)
                 .map(doc -> {
                     Document idDoc = (Document) doc.get("_id");
-                    Long userId = idDoc.getLong("userId");
-                    Long articleId = idDoc.getLong("articleId");
+                    Long userId = ((Number) idDoc.get("userId")).longValue();
+                    Long articleId = ((Number) idDoc.get("articleId")).longValue();
                     return Tuples.of(userId, articleId);
                 });
     }
