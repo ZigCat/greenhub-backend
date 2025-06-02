@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -56,6 +57,15 @@ public class R2dbcAuthorRewardRepository implements AuthorRewardRepository {
                     if(e instanceof EmptyResultDataAccessException){
                         throw new NotFoundInfrastructureException("Couldn't found reward with this ID");
                     }
+                    throw new DatabaseException("Article service unavailable");
+                });
+    }
+
+    @Override
+    public Flux<AuthorRewardModel> findAllByCalculatedAtAfter(LocalDateTime date) {
+        return repository.findAllByCalculatedAtAfter(date)
+                .onErrorMap(e -> {
+                    log.error(e.getMessage());
                     throw new DatabaseException("Article service unavailable");
                 });
     }

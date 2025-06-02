@@ -5,12 +5,14 @@ import com.github.zigcat.greenhub.article_provider.infrastructure.models.AuthorR
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AuthorRewardRepository {
     Flux<AuthorRewardModel> findAllByAuthorId(Long authorId);
     Flux<AuthorRewardModel> findAll();
     Mono<AuthorRewardModel> findById(Long id);
+    Flux<AuthorRewardModel> findAllByCalculatedAtAfter(LocalDateTime date);
     Mono<AuthorRewardModel> save(AuthorRewardModel model);
     Flux<AuthorRewardModel> saveAll(List<AuthorRewardModel> models);
     Mono<Void> delete(Long id);

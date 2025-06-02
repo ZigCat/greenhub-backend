@@ -7,11 +7,13 @@ import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.article_provider.infrastructure.mappers.RewardMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,9 +35,14 @@ public class RewardService {
         this.articles = articles;
     }
 
-    public Flux<Void> calculateMonthlyReward(){
+    public Flux<AuthorReward> calculateMonthlyReward(){
         log.info("Starting calculating monthly reward for each author...");
-        return subscriptions.listAllActive()
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        return repository.findAllByCalculatedAtAfter(startOfMonth)
+            .map(RewardMapper::toEntity)
+            .map(AuthorReward::getAuthorId)
+            .collectList()
+            .flatMapMany(paidAuthors -> subscriptions.listAllActive()
                 .onErrorResume(e -> {
                     log.error("An error occurred while trying to get subscriptions: {}", e.getMessage());
                     return Mono.error(e);
@@ -70,9 +77,10 @@ public class RewardService {
                                             .flatMap(model -> users
                                                     .retrieve(model.getCreator())
                                                     .filter(u -> {
-                                                        boolean pass = u.getRole().equals(Role.AUTHOR.toString());
-                                                        log.info("Article: {}, user: {}, isPassed = {}", model.getId(), u, pass);
-                                                        return pass;
+                                                        boolean isAuthor = u.getRole().equals(Role.AUTHOR.toString());
+                                                        boolean notAlreadyRewarded = !paidAuthors.contains(u.getId());
+                                                        log.info("Article: {}, user: {}, isAuthor = {}, alreadyRewarded = {}", model.getId(), u, isAuthor, notAlreadyRewarded);
+                                                        return isAuthor && notAlreadyRewarded;
                                                     })
                                                     .map(u -> new AuthorReward(u.getId(), rewardPerArticle, LocalDateTime.now())));
 
@@ -88,15 +96,18 @@ public class RewardService {
                                                             a.getCalculatedAt())
                                             )
                                     )
-                                    .map(rew -> {
-                                        log.info("Calculated: {}", rew);
-                                        return RewardMapper.toModel(rew);
-                                    })
-//                                    .collectList()
-//                                    .flatMapMany(rewards -> repository.saveAll(rewards))
-                                    .then();
+                                    .doOnNext(rew -> log.info("Calculated: {}", rew))
+                                    .map(RewardMapper::toModel)
+                                    .collectList()
+                                    .flatMapMany(rewards -> repository.saveAll(rewards))
+                                    .map(RewardMapper::toEntity);
                         })
                 )
-                .doOnError(e -> log.error("Reward calculation failed: {}", e.getMessage()));
+                .doOnError(e -> log.error("Reward calculation failed: {}", e.getMessage())));
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
+    public void scheduleRewarding(){
+        calculateMonthlyReward().then();
     }
 }

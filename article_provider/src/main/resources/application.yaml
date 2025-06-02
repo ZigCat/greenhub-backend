@@ -1,6 +1,9 @@
 server:
   port: 8083
 spring:
+  task:
+    scheduling:
+      timezone: Asia/Yekaterinburg
   application:
     name: article-provider
   r2dbc:
