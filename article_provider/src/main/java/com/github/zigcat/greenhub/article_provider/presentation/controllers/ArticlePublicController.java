@@ -132,7 +132,8 @@ public class ArticlePublicController {
             @RequestParam(required = false) Long creator,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) Boolean sort){
-        return service.list(request, "GRANTED", "FREE", creator, page, size, sort);
+            @RequestParam(required = false) Boolean sort,
+            @RequestParam(required = false) Long category){
+        return service.list(request, "GRANTED", "FREE", creator, category, page, size, sort);
     }
 }

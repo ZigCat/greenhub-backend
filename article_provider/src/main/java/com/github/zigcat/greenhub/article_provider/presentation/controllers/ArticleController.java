@@ -88,9 +88,10 @@ public class ArticleController {
             @RequestParam(required = false) Long creator,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) Boolean sort
+            @RequestParam(required = false) Boolean sort,
+            @RequestParam(required = false) Long category
             ){
-        return service.list(request, status, paid, creator, page, size, sort);
+        return service.list(request, status, paid, creator, category, page, size, sort);
     }
 
     @Operation(

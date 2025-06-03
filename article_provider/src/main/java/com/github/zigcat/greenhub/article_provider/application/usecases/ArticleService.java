@@ -90,6 +90,7 @@ public class ArticleService {
             String articleStatus,
             String paidStatus,
             Long creatorId,
+            Long categoryId,
             Integer page,
             Integer size,
             Boolean sort
@@ -147,6 +148,7 @@ public class ArticleService {
                         if(!"ALL".equals(paid)) paidMatches = article.getPaidStatus().equals(PaidStatus.valueOf(paid));
                         boolean statusMatches = article.getArticleStatus().equals(status);
                         boolean creatorMatches = creatorId == null || article.getCreator().getId().equals(creatorId);
+                        boolean categoryMatches = categoryId == null || article.getCategory().getId().equals(categoryId);
                         return paidMatches && statusMatches && creatorMatches;
                     })
                     .collectList()
