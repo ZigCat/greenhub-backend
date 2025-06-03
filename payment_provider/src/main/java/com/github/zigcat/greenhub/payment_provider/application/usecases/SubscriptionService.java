@@ -6,6 +6,7 @@ import com.github.zigcat.greenhub.payment_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.payment_provider.domain.interfaces.SubscriptionRepository;
 import com.github.zigcat.greenhub.payment_provider.domain.schemas.SubscriptionStatus;
 import com.github.zigcat.greenhub.payment_provider.infrastructure.mappers.SubscriptionMapper;
+import com.github.zigcat.greenhub.payment_provider.infrastructure.models.SubscriptionModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -30,7 +32,10 @@ public class SubscriptionService {
     }
 
     public Flux<AppSubscription> list(){
-        return repository.findAll().map(SubscriptionMapper::toEntity);
+        return repository
+                .findAll()
+                .sort(Comparator.comparing(SubscriptionModel::getEndDate).reversed())
+                .map(SubscriptionMapper::toEntity);
     }
 
     public Mono<AppSubscription> retrieve(Long id){

@@ -79,7 +79,7 @@ public class RewardService {
                                                     .filter(u -> {
                                                         boolean isAuthor = u.getRole().equals(Role.AUTHOR.toString());
                                                         boolean notAlreadyRewarded = !paidAuthors.contains(u.getId());
-                                                        log.info("Article: {}, user: {}, isAuthor = {}, alreadyRewarded = {}", model.getId(), u, isAuthor, notAlreadyRewarded);
+                                                        log.info("Article: {}, user: {}, isAuthor = {}, alreadyRewarded = {}", model.getId(), u, isAuthor, !notAlreadyRewarded);
                                                         return isAuthor && notAlreadyRewarded;
                                                     })
                                                     .map(u -> new AuthorReward(u.getId(), rewardPerArticle, LocalDateTime.now())));
