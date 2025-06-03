@@ -18,7 +18,7 @@ import java.util.List;
 @Component
 public class RedisArticleCache implements ArticleCache {
     private static final String CACHE_KEY = "articles:all";
-    private static final Duration TTL = Duration.ofMinutes(5);
+    private static final Duration TTL = Duration.ofMinutes(1);
     private final ReactiveRedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
