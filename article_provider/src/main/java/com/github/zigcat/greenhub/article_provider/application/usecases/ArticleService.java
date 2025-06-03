@@ -149,7 +149,7 @@ public class ArticleService {
                         boolean statusMatches = article.getArticleStatus().equals(status);
                         boolean creatorMatches = creatorId == null || article.getCreator().getId().equals(creatorId);
                         boolean categoryMatches = categoryId == null || article.getCategory().getId().equals(categoryId);
-                        return paidMatches && statusMatches && creatorMatches;
+                        return paidMatches && statusMatches && creatorMatches && categoryMatches;
                     })
                     .collectList()
                     .flatMapMany(filtered -> {
