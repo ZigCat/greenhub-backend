@@ -31,7 +31,12 @@ public class PaymentController {
 
     @GetMapping("/list")
     public Flux<AppSubscription> listAll(ServerHttpRequest request){
-        return service.listAll(request);
+        return service.listAll(request, null);
+    }
+
+    @GetMapping("/list/{id}")
+    public Flux<AppSubscription> listAllById(ServerHttpRequest request, @PathVariable("id") Long id){
+        return service.listAll(request, id);
     }
 
     @PostMapping("/create/{plan}")

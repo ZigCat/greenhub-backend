@@ -40,13 +40,19 @@ public class SessionService {
                 });
     }
 
-    public Flux<AppSubscription> listAll(ServerHttpRequest request){
+    public Flux<AppSubscription> listAll(ServerHttpRequest request, Long id){
         return Flux.just(permissions.extractAuthData(request))
                 .flatMap(auth -> {
-                    if(!auth.getScopes().contains(ScopeType.PAYMENT_VIEW.getScope())){
-                        return Flux.error(new ForbiddenAppException("User hasn't access for this action"));
+                    Long userId;
+                    if(id == null){
+                        if(!auth.getScopes().contains(ScopeType.PAYMENT_VIEW.getScope())){
+                            return Flux.error(new ForbiddenAppException("User hasn't access for this action"));
+                        }
+                        userId = auth.getId();
+                    } else {
+                        userId = id;
                     }
-                    return subscriptions.retrieveByUserId(auth.getId());
+                    return subscriptions.retrieveByUserId(userId);
                 });
     }
 
