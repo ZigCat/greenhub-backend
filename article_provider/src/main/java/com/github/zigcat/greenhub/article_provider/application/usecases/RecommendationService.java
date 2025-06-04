@@ -4,6 +4,7 @@ import com.github.zigcat.greenhub.article_provider.domain.interfaces.AuthorCache
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.RecommendationCache;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.RecommendationRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.mahout.cf.taste.common.NoSuchUserException;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
@@ -69,24 +70,29 @@ public class RecommendationService {
             long[] neighbors = neighborhood.getUserNeighborhood(userId);
             log.info("User {} neighbors: {}", userId, Arrays.toString(neighbors));
 
-            FastIDSet seenItems = model.getItemIDsFromUser(userId);
-            LongPrimitiveIterator allItemIDs = model.getItemIDs();
+            try{
+                FastIDSet seenItems = model.getItemIDsFromUser(userId);
+                LongPrimitiveIterator allItemIDs = model.getItemIDs();
 
-            List<RecommendedItem> estimated = new ArrayList<>();
-            while (allItemIDs.hasNext()) {
-                long itemId = allItemIDs.nextLong();
-                if (seenItems.contains(itemId)) continue;
-                float pref = recommender.estimatePreference(userId, itemId);
-                if (!Float.isNaN(pref)) {
-                    estimated.add(new GenericRecommendedItem(itemId, pref));
+                List<RecommendedItem> estimated = new ArrayList<>();
+                while (allItemIDs.hasNext()) {
+                    long itemId = allItemIDs.nextLong();
+                    if (seenItems.contains(itemId)) continue;
+                    float pref = recommender.estimatePreference(userId, itemId);
+                    if (!Float.isNaN(pref)) {
+                        estimated.add(new GenericRecommendedItem(itemId, pref));
+                    }
                 }
+                List<Long> recs = estimated.stream()
+                        .sorted(Comparator.comparingDouble(RecommendedItem::getValue).reversed())
+                        .map(RecommendedItem::getItemID)
+                        .toList();
+                log.info("Recommendations for user {}: {}", userId, recs);
+                return recs;
+            } catch (NoSuchUserException e){
+                log.error("No relations found for user {}", userId);
+                return null;
             }
-            List<Long> recs = estimated.stream()
-                    .sorted(Comparator.comparingDouble(RecommendedItem::getValue).reversed())
-                    .map(RecommendedItem::getItemID)
-                    .toList();
-            log.info("Recommendations for user {}: {}", userId, recs);
-            return recs;
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }

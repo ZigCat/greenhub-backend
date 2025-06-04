@@ -195,6 +195,7 @@ public class ArticleService {
     public Flux<Article> listRecommended(ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         return recommendationService.getRecommendations(auth.getId())
+                .switchIfEmpty(Mono.error(new NotFoundAppException("No interactions found for this user")))
                 .flatMapMany(repository::findAllById)
                 .flatMap(model -> {
                     log.info("Mapping model: {}", model);
