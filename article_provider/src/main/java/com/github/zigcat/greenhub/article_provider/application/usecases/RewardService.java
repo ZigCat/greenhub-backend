@@ -44,7 +44,7 @@ public class RewardService {
         return Mono.fromCallable(() -> permissions.extractAuthData(request))
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMapMany(auth -> {
-                    if(!auth.getId().equals(authorId) || !auth.isAdmin()) return Flux.error(new ForbiddenAppException("Access denied"));
+                    if(!auth.getId().equals(authorId) && !auth.isAdmin()) return Flux.error(new ForbiddenAppException("Access denied"));
                     return repository.findAllByAuthorId(authorId)
                             .map(RewardMapper::toEntity);
                 });
