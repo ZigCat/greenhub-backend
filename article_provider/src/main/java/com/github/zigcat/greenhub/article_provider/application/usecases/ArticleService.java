@@ -234,8 +234,7 @@ public class ArticleService {
     public Mono<Article> create(Article article, ServerHttpRequest request){
         AuthorizationData auth = permissions.extractAuthData(request);
         if(!permissions.canPublish(auth)) return Mono.error(new ForbiddenAppException("User can't publish articles"));
-        PaidStatus paidStatus = permissions.canBePaid(auth);
-        ArticleModel articleModel = new ArticleModel(article.getTitle(), article.getAnnotation(), ArticleStatus.MODERATION, paidStatus, auth.getId(), article.getCategory().getId());
+        ArticleModel articleModel = new ArticleModel(article.getTitle(), article.getAnnotation(), ArticleStatus.MODERATION, permissions.canBePaid(auth) ? article.getPaidStatus() : PaidStatus.FREE, auth.getId(), article.getCategory().getId());
         return repository.save(articleModel)
                 .flatMap(model -> contentRepository
                         .save(new ArticleContentModel(model.getId(), article.getContent()))

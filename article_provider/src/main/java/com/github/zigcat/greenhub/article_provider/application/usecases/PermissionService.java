@@ -1,7 +1,6 @@
 package com.github.zigcat.greenhub.article_provider.application.usecases;
 
 import com.github.zigcat.greenhub.article_provider.domain.AuthorizationData;
-import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Service;
@@ -55,7 +54,7 @@ public class PermissionService {
         return auth.canPublishArticles() && (creator.equals(auth.getId()) || auth.isAdmin());
     }
 
-    public PaidStatus canBePaid(AuthorizationData auth){
-        return auth.isAuthor() ? PaidStatus.PAID : PaidStatus.FREE;
+    public boolean canBePaid(AuthorizationData auth){
+        return auth.isAuthor() || auth.isAdmin();
     }
 }

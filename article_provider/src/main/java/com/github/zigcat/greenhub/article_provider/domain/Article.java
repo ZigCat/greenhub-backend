@@ -37,11 +37,12 @@ public class Article {
     @Schema
     private Interaction interaction;
 
-    public Article(String title, String content, String annotation, Category category) {
+    public Article(String title, String content, String annotation, Category category, String paidStatus) {
         this.title = title;
         this.content = content;
         this.annotation = annotation;
         this.category = category;
+        this.paidStatus = PaidStatus.valueOf(paidStatus);
     }
 
     public Double calculateScore(){

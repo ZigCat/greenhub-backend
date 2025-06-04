@@ -16,7 +16,9 @@ public class DTO {
             @Schema(example = "Sample article")
             String annotation,
             @Schema(example = "1")
-            Long category
+            Long category,
+            @Schema
+            String paidStatus
     ){}
 
     @Schema(description = "Category data transfer object")

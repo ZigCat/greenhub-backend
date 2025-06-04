@@ -57,7 +57,8 @@ public class ArticleUtils {
                 dto.title(),
                 dto.content(),
                 dto.annotation(),
-                dto.category() != null ? new Category(dto.category()) : null
+                dto.category() != null ? new Category(dto.category()) : null,
+                dto.paidStatus()
         );
     }
 }
