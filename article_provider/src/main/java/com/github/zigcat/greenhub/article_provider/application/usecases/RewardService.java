@@ -50,7 +50,16 @@ public class RewardService {
                 });
     }
 
-    public Flux<AuthorReward> calculateMonthlyReward(){
+    public Flux<AuthorReward> calculateImmediately(ServerHttpRequest request){
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMapMany(auth -> {
+                    if(!auth.isAdmin()) return Flux.error(new ForbiddenAppException("Access denied"));
+                    return calculateMonthlyReward();
+                });
+    }
+
+    private Flux<AuthorReward> calculateMonthlyReward(){
         log.info("Starting calculating monthly reward for each author...");
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         return repository.findAllByCalculatedAtAfter(startOfMonth)
@@ -121,7 +130,7 @@ public class RewardService {
                 .doOnError(e -> log.error("Reward calculation failed: {}", e.getMessage())));
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 1 1 * *")
     public void scheduleRewarding(){
         calculateMonthlyReward().then();
     }

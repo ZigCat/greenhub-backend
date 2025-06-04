@@ -22,4 +22,9 @@ public class RewardController {
     public Flux<AuthorReward> getByAuthorId(ServerHttpRequest request, @PathVariable("id") Long id){
         return service.retrieveByAuthorId(request, id);
     }
+
+    @GetMapping
+    public Flux<AuthorReward> calculate(ServerHttpRequest request){
+        return service.calculateImmediately(request);
+    }
 }
