@@ -1,5 +1,6 @@
 package com.github.zigcat.greenhub.article_provider.application.usecases;
 
+import com.github.zigcat.greenhub.article_provider.application.exceptions.ForbiddenAppException;
 import com.github.zigcat.greenhub.article_provider.domain.AppSubscription;
 import com.github.zigcat.greenhub.article_provider.domain.AuthorReward;
 import com.github.zigcat.greenhub.article_provider.domain.interfaces.*;
@@ -7,10 +8,12 @@ import com.github.zigcat.greenhub.article_provider.domain.schemas.PaidStatus;
 import com.github.zigcat.greenhub.article_provider.domain.schemas.Role;
 import com.github.zigcat.greenhub.article_provider.infrastructure.mappers.RewardMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
 
 import java.time.LocalDate;
@@ -26,13 +29,25 @@ public class RewardService {
     private final SubscriptionRepository subscriptions;
     private final InteractionRepository interactions;
     private final ArticleRepository articles;
+    private final PermissionService permissions;
 
-    public RewardService(AuthorRewardRepository repository, UserRepository users, SubscriptionRepository subscriptions, InteractionRepository interactions, ArticleRepository articles) {
+    public RewardService(AuthorRewardRepository repository, UserRepository users, SubscriptionRepository subscriptions, InteractionRepository interactions, ArticleRepository articles, PermissionService permissions) {
         this.repository = repository;
         this.users = users;
         this.subscriptions = subscriptions;
         this.interactions = interactions;
         this.articles = articles;
+        this.permissions = permissions;
+    }
+
+    public Flux<AuthorReward> retrieveByAuthorId(ServerHttpRequest request, Long authorId){
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMapMany(auth -> {
+                    if(!auth.getId().equals(authorId) || !auth.isAdmin()) return Flux.error(new ForbiddenAppException("Access denied"));
+                    return repository.findAllByAuthorId(authorId)
+                            .map(RewardMapper::toEntity);
+                });
     }
 
     public Flux<AuthorReward> calculateMonthlyReward(){
@@ -99,7 +114,7 @@ public class RewardService {
                                     .doOnNext(rew -> log.info("Calculated: {}", rew))
                                     .map(RewardMapper::toModel)
                                     .collectList()
-                                    .flatMapMany(rewards -> repository.saveAll(rewards))
+                                    .flatMapMany(repository::saveAll)
                                     .map(RewardMapper::toEntity);
                         })
                 )

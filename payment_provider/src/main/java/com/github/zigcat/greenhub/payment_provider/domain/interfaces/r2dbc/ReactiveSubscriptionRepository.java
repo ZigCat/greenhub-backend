@@ -14,7 +14,7 @@ public interface ReactiveSubscriptionRepository extends ReactiveCrudRepository<S
     Flux<SubscriptionModel> findAllByProviderCustomerId(String providerCustomerId);
     @Query("SELECT * FROM user_subscriptions " +
             "WHERE status IN ('ACTIVE', 'CANCEL_AWAITING') " +
-            "AND start_date <= NOW() AND end_date >= NOW()")
+            "AND start_date::date <= NOW() AND end_date::date >= NOW()")
     Flux<SubscriptionModel> findAllActive();
     @Query("UPDATE user_subscriptions SET status = 'EXPIRED' " +
             "WHERE status IN ('PENDING', 'PAYMENT_FAILED') AND created_at < :cutoff")
