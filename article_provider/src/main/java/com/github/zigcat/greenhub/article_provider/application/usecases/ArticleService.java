@@ -120,7 +120,7 @@ public class ArticleService {
                             !auth.isAdmin()) {
                         effectiveStatus = ArticleStatus.GRANTED;
                     }
-                    if(auth.isAdmin()){
+                    if(auth.isAdmin() || (auth.getId().equals(creatorId))){
                         return Mono.zip(
                                 effectivePaid == null ? Mono.just("ALL") : Mono.just(effectivePaid.getValue()),
                                 Mono.just(effectiveStatus));
