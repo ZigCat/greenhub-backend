@@ -10,16 +10,16 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping("/protected/reward")
-public class RewardController {
+@RequestMapping("/public/reward")
+public class RewardControllerPublic {
     private final RewardService service;
 
-    public RewardController(RewardService service) {
+    public RewardControllerPublic(RewardService service) {
         this.service = service;
     }
 
-    @GetMapping("/{id}")
-    public Flux<AuthorReward> getByAuthorId(ServerHttpRequest request, @PathVariable("id") Long id){
-        return service.retrieveByAuthorId(request, id);
+    @GetMapping
+    public Flux<AuthorReward> calculate(){
+        return service.calculateMonthlyReward();
     }
 }
