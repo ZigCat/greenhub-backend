@@ -33,6 +33,11 @@ public class ArticleController {
         this.service = service;
     }
 
+    @GetMapping("/search")
+    public Flux<Article> search(ServerHttpRequest request, @RequestParam String query){
+        return service.searchWithAuth(request, query);
+    }
+
     @Operation(
             summary = "GET ALL (protected)",
             description = "Listing all articles, optionally by criteria",

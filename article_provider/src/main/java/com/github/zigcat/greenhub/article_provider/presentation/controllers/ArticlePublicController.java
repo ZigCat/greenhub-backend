@@ -29,6 +29,11 @@ public class ArticlePublicController {
         this.service = service;
     }
 
+    @GetMapping("/search")
+    public Flux<Article> search(@RequestParam String query){
+        return service.search(query, false);
+    }
+
     @Operation(
             summary = "GET BY ID",
             description = "Retrieving article by ID, optionally by criteria",

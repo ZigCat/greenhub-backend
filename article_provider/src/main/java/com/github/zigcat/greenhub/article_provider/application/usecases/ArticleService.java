@@ -19,8 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.util.Comparator;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -165,6 +168,64 @@ public class ArticleService {
                     });
                 });
     }
+
+    public Flux<Article> searchWithAuth(ServerHttpRequest request, String query){
+        return Mono.fromCallable(() -> permissions.extractAuthData(request))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(auth -> subscriptionRepository.retrieve(auth)
+                        .onErrorResume(e -> {
+                            log.info("No subs for user {}", auth.getId());
+                            return Mono.empty();
+                        })
+                        .map(Objects::nonNull)
+                        .defaultIfEmpty(auth.isAdmin())
+                        .map(includePaid -> Tuples.of(query, includePaid))
+                )
+                .flatMapMany(tuple -> search(tuple.getT1(), tuple.getT2()));
+    }
+
+    public Flux<Article> search(String query, Boolean includePaid) {
+        log.info("IncludePaid = {}", includePaid);
+        String lowerQuery = query.toLowerCase();
+        return getAllArticles()
+                .filter(article -> {
+                    boolean isPaid = includePaid || article.getPaidStatus().equals(PaidStatus.FREE);
+                    boolean isGranted = article.getArticleStatus().equals(ArticleStatus.GRANTED);
+                    return isGranted && isPaid;
+                })
+                .map(article -> {
+                    String title = article.getTitle().toLowerCase();
+                    String annotation = article.getAnnotation().toLowerCase();
+
+                    int score = 0;
+
+                    score += countOccurrences(title, lowerQuery) * 3;
+                    score += countOccurrences(annotation, lowerQuery);
+
+                    int titleIndex = title.indexOf(lowerQuery);
+                    int annotationIndex = annotation.indexOf(lowerQuery);
+                    if (titleIndex >= 0) score += 10 - Math.min(titleIndex, 10);
+                    if (annotationIndex >= 0) score += 5 - Math.min(annotationIndex, 5);
+
+                    if (title.equals(lowerQuery)) score += 20;
+                    if (annotation.equals(lowerQuery)) score += 10;
+
+                    return Tuples.of(score, article);
+                })
+                .filter(tuple -> tuple.getT1() > 0)
+                .sort((a, b) -> Integer.compare(b.getT1(), a.getT1()))
+                .map(Tuple2::getT2);
+    }
+
+    private int countOccurrences(String text, String query) {
+        int count = 0, index = 0;
+        while ((index = text.indexOf(query, index)) != -1) {
+            count++;
+            index += query.length();
+        }
+        return count;
+    }
+
 
     public Mono<Article> retrieve(ServerHttpRequest request, Long id){
         AuthorizationData auth = permissions.extractAuthData(request);
